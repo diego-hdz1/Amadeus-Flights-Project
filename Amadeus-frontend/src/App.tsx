@@ -1,13 +1,18 @@
 import './App.css'
-// import Search from './components/search'
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import ShowResults from './components/showResults'
 import Search from './components/search'
 
 function App() {
+  //const location = useLocation();
 
   return (
     <>
-      {/*AQUI PONER EL HEADER TAMBIEN */}
-      <Search />
+      <BrowserRouter>
+        <Routes >
+          <Route path='/prueba' element={ <ShowResults/> }></Route>
+        </Routes>
+      </BrowserRouter>
     </>
   )
 }
