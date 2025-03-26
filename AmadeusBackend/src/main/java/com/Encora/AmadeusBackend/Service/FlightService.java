@@ -17,7 +17,6 @@ public interface FlightService {
     String getAirportName(String airportCode);
     String getCityName(String airportCode);
     String getTotalTime(String initialTime, String finalTime);
-//    List<FlightDetails> getFlightDetails();
     //METODO PARA CHECAR TODO, VERIFICAR Y LANZAR EXCEPCIONES
 
 

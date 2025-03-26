@@ -4,6 +4,7 @@ import java.util.List;
 
 public class Flight {
 
+    private Integer flightId;
     private String initialDepartureDate;
     private String finalArrivalDate;
     private String airlineName;
@@ -11,7 +12,7 @@ public class Flight {
     //The name and code of the operating airline (only if different from the main airline)
 
     //the total time of the flight from departure to arrival. This should include the flight time, layover time of all segments (if there are any)
-    private Integer totalTime;
+    private String totalTime;
     //CAMBIAR A LOCALDATETIME???
 
     private Float totalPrice;
@@ -19,7 +20,8 @@ public class Flight {
     private String currency;
     private List<Segments> segments;
 
-    public Flight(String initialDepartureDate, String finalArrivalDate, String airlineName, String airlineCode, Integer totalTime, Float totalPrice, Float pricePerTraveler, String currency, List<Segments> segments) {
+    public Flight(Integer flightId, String initialDepartureDate, String finalArrivalDate, String airlineName, String airlineCode, String totalTime, Float totalPrice, Float pricePerTraveler, String currency, List<Segments> segments) {
+        this.flightId = flightId;
         this.initialDepartureDate = initialDepartureDate;
         this.finalArrivalDate = finalArrivalDate;
         this.airlineName = airlineName;
@@ -50,6 +52,14 @@ public class Flight {
         return segments;
     }
 
+    public Integer getFlightId() {
+        return flightId;
+    }
+
+    public void setFlightId(Integer flightId) {
+        this.flightId = flightId;
+    }
+
     public void setSegments(List<Segments> segments) {
         this.segments = segments;
     }
@@ -78,11 +88,11 @@ public class Flight {
         this.airlineName = airlineName;
     }
 
-    public Integer getTotalTime() {
+    public String getTotalTime() {
         return totalTime;
     }
 
-    public void setTotalTime(Integer totalTime) {
+    public void setTotalTime(String totalTime) {
         this.totalTime = totalTime;
     }
 

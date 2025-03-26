@@ -4,6 +4,7 @@ import com.Encora.AmadeusBackend.Model.AirportCode;
 import com.Encora.AmadeusBackend.Model.Flight;
 import com.Encora.AmadeusBackend.Model.Segments;
 import com.Encora.AmadeusBackend.Repo.FlightRepo;
+import org.apache.catalina.util.RateLimiter;
 import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
@@ -11,14 +12,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+//import com.google.common.util.concurrent.RateLimiter;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class FlightServiceImpl implements FlightService{
@@ -28,9 +27,12 @@ public class FlightServiceImpl implements FlightService{
 
   final String CLIENT_ID = System.getProperty("amadeus.client.id", System.getenv("AMADEUS_CLIENT_ID"));
   final String CLIENT_SECRET = System.getProperty("amadeus.client.secret", System.getenv("AMADEUS_CLIENT_SECRET"));
-    
+
+
+
     Map<String, String> airlinesNames = new HashMap<>();
     Map<String, String> cityNames = new HashMap<>();
+    Set<String> control = new HashSet<>();
 
     //CHECAR
     public FlightServiceImpl() throws Exception {
@@ -87,106 +89,95 @@ public class FlightServiceImpl implements FlightService{
     @Override
     public List<Flight> getFlights(String departureAirportCode, String arrivalAirportCode, String departureDate, String arrivalDate, Integer adults, Boolean nonStop, String currency) {
         StringBuilder builder = new StringBuilder("https://test.api.amadeus.com/v2/shopping/flight-offers?");
-
-        //HAY QUE CHECAR QUE PASA SI RETURN DATE ES NULL!!
         builder.append("originLocationCode=").append(departureAirportCode).append("&destinationLocationCode=").append(arrivalAirportCode).
-                append("&departureDate=").append(departureDate).append("&returnDate=").append(arrivalDate).append("&adults=").append(adults).
-                append("&nonStop=").append(nonStop).append("&currencyCode=").append(currency).append("&max=40");
-
+                append("&departureDate=").append(departureDate);
+                if(!Objects.equals(arrivalDate, "none")){ //returnDate is optional
+                    builder.append("&returnDate=").append(arrivalDate);
+                }
+                builder.append("&adults=").append(adults).
+                append("&nonStop=").append(nonStop).append("&currencyCode=").append(currency).append("&max=200");
 
         ResponseEntity<Map> response  = createURL(builder.toString());
-
         List<Map<String, Object>> flightData = (List<Map<String, Object>>) response.getBody().get("data");
-
-        for(Map<String, Object> flight: flightData){
-            Map<String, Object> itineraries = ((List<Map<String, Object>>) flight.get("travelerPricings")).get(0);
-            System.out.println(itineraries);
-
-        }
-
-
         List<Flight> flights = new ArrayList<>();
+
         for(Map<String, Object> flight: flightData){
-
-            //CHECAR ESTO
             List<Segments> totalSegments = new ArrayList<>();
+            Integer flightId = Integer.valueOf((String) flight.get("id"));
 
-            //El itinerary uno es de ida y el otro es de regreo.
-            //AHORITA COMO SOLO PONEMOS OBTENER EL 0 SE OBTIENEN SOLO LOS DE IDA
-            Map<String, Object> itineraries = ((List<Map<String, Object>>) flight.get("itineraries")).get(0);
-
-            //Aqui cada posicion es para llegar al destino, cada segmento esta entrelazado para llegar al destino
-
-//            Map<String, Object> segment = ((List<Map<String, Object>>) itineraries.get("segments")).get(0);
-
-            List<Map<String, Object>> allSegments = ((List<Map<String, Object>>) itineraries.get("segments"));
-
-
-            //NO ESTA OBTENIENDO LOS DE REGRESO, solamente si se pone una return date
-            //CADA VEZ QUE ESTOY CHECANDO UN VUELO VUELVE A EMPEZAR
-            for(Map<String, Object> segment: allSegments){
-
-                Map<String, Object> departure = (Map<String, Object>) segment.get("departure");
-                String departureTime = (String) departure.get("at");
-                String initialAirlineCode = (String) departure.get("iataCode");
-
-
-                Map<String, Object> arrival = (Map<String, Object>) segment.get("arrival");
-                String arrivalTime = (String) arrival.get("at");
-                String arriveAirlineCode = (String) departure.get("iataCode");
-
-                //CAMBIAR LOS CODIGOS A NOMBRES DE CIUDADES!
-
-                //getCityName(initialAirlineCode)
-                String initialName = "NO TODOS ESTAN?";
-                String arriveName = "Otro";
-
-                Map<String, Object> operating = (Map<String, Object>) segment.get("operating");
-
-                String carrierCode = (String) operating.get("carrierCode");
-
-                Map<String, Object> aircraft = (Map<String, Object>) segment.get("aircraft");
-                String aircraftCode = (String) aircraft.get("code");
-
-
-                String totalDuration = (String) segment.get("duration");
-
-                Segments newSegment = new Segments(departureTime, arrivalTime, arriveName, initialName, initialAirlineCode, arriveAirlineCode, carrierCode, aircraftCode, totalDuration);
-                totalSegments.add(newSegment);
-
-                //System.out.println(newSegment.toString());
+            //To check if we need to consider a returning date, in this case, returning segments
+            int returningSements = 2;
+            if(Objects.equals(arrivalDate, "none")){
+                returningSements = 1;
             }
 
+            //Perform cleaner code with this thing of itineraries
+            Map<String, Object> checkItineraries = ((List<Map<String, Object>>) flight.get("itineraries")).get(0);
+            List<Map<String, Object>> checkSegments = ((List<Map<String, Object>>) checkItineraries.get("segments"));
+            Map<String, Object> check = (Map<String, Object>) checkSegments.get(0).get("departure");
+            String checkTime = (String) check.get("at");
 
-            //CHECAR EL INDICE DE ESTAS MADRES, PARA QUE NO SEA ESTATICO, PORQUE LA LISTA ESTA FUERA DEL FOR
-            //NO ESTA BIEN PORQUE HAY MAS SEGMENTOS POR VIAJE,
+            if(control.contains(checkTime)) continue; //To not have the same flight with different id segments
+            control.add(checkTime);
+
+            for(int i=0; i<returningSements;i++){
+                Map<String, Object> itineraries = ((List<Map<String, Object>>) flight.get("itineraries")).get(i);
+                List<Map<String, Object>> allSegments = ((List<Map<String, Object>>) itineraries.get("segments"));
+
+                for(Map<String, Object> segment: allSegments){
+                    Map<String, Object> departure = (Map<String, Object>) segment.get("departure");
+                    String departureTime = (String) departure.get("at");
+                    String initialAirlineCode = (String) departure.get("iataCode");
+
+                    Map<String, Object> arrival = (Map<String, Object>) segment.get("arrival");
+                    String arrivalTime = (String) arrival.get("at");
+                    String arriveAirlineCode = (String) departure.get("iataCode");
+
+                    String initialName = getCityName(initialAirlineCode);
+                    String arriveName = getCityName(arriveAirlineCode);
+
+                    Map<String, Object> operating = (Map<String, Object>) segment.get("operating");
+
+                    //EL OPERATING A VECES ES NULL???
+                    String carrierCode;
+                    if(operating == null)carrierCode = "";
+                    else carrierCode = (String) operating.get("carrierCode");
+
+                    Map<String, Object> aircraft = (Map<String, Object>) segment.get("aircraft");
+                    String aircraftCode = (String) aircraft.get("code");
+                    String totalDuration = (String) segment.get("duration");
+                    Segments newSegment = new Segments(departureTime, arrivalTime, arriveName, initialName, initialAirlineCode, arriveAirlineCode, carrierCode, aircraftCode, totalDuration);
+                    totalSegments.add(newSegment);
+                }
+            }
+
             String departureTime = totalSegments.get(0).getInitialDepartureDate();
+
+            //No se si este esta bien
             String arrivalTime = totalSegments.get(0).getFinalArrivalDate();
             String carrierCode = totalSegments.get(0).getCarrierCode();
+
+
+
+            //MUCHAS REQUESTS AQUI, NO SE PORQUE
             String airlineName = getAirportName(carrierCode);
+            //String airlineName = "429 ERROR";
 
-            //FALTA ENCONTRAR EL NOMBRE Y EL TIEMPO
 
-            //CAMBIAR A LOCALDATETIME???
-            //HAY UNA PROPIEDAD EN LOS DATOS QUE DICE EL TIEMPO TOTAL ARRIBA DE LOS SEGMENTS
-            //(String) itineraries.get("duration");
-            Integer GenericTime = 10;
-            //getTotalTime(departureTime, arrivalTime);
-
-            Float pricePerTraveler = 10F; //ESTO LO CALCULAMOS NOSOTROS?? YO CREO QUE SI
-
+            String totalTime = (String) checkItineraries.get("duration");
             Map<String, Object> price = (Map<String, Object>) flight.get("price");
 
             Float totalPrice = Float.valueOf((String) price.get("total"));
+            Float pricePerTraveler = totalPrice/adults;
             String currencyName = (String) price.get("currency");
 
-            //SEGMENTS PEUDE TENER DISTINTOS, CHECAR ESO POR MIENTRAS ESTA ESTATICO
-            Flight newFlight = new Flight(departureTime, arrivalTime, airlineName, carrierCode, GenericTime, totalPrice, pricePerTraveler, currencyName, totalSegments);
+            Flight newFlight = new Flight(flightId, departureTime, arrivalTime, airlineName, carrierCode, totalTime, totalPrice, pricePerTraveler, currencyName, totalSegments);
             flights.add(newFlight);
         }
         return flights;
     }
 
+    //Check for 429 Too Many Requests error
     @Override
     public String getAirportName(String airportCode) {
         if(!airlinesNames.containsKey(airportCode)){
@@ -194,30 +185,38 @@ public class FlightServiceImpl implements FlightService{
             builder.append(airportCode);
             ResponseEntity<Map> response  = createURL(builder.toString());
             List<Map<String, Object>> codeData = (List<Map<String, Object>>) response.getBody().get("data");
-            airlinesNames.put(airportCode, ((String) codeData.get(0).get("businessName")));
+            if(codeData.isEmpty()){
+                airlinesNames.put(airportCode, ""); //To prevent the 429 too many requests when some code its not in the API
+                return "";
+            }            airlinesNames.put(airportCode, ((String) codeData.get(0).get("businessName")));
             return ((String) codeData.get(0).get("businessName"));
         }
         return airlinesNames.get(airportCode);
     }
 
+    //Check for 429 Too Many Requests error
     @Override
     public String getCityName(String airportCode) {
+        String cityFromRepo = flightRepo.getCity(airportCode);
+        if(!Objects.equals(cityFromRepo, "")) return cityFromRepo;
         if(!cityNames.containsKey(airportCode)){
+            System.out.println(airportCode);
             StringBuilder builder = new StringBuilder("https://test.api.amadeus.com/v1/reference-data/locations?subType=CITY,AIRPORT&keyword="+airportCode);
             builder.append(airportCode);
             ResponseEntity<Map> response  = createURL(builder.toString());
-
             List<Map<String, Object>> codeData = (List<Map<String, Object>>) response.getBody().get("data");
-            System.out.println(codeData);
+            if(codeData.isEmpty()){
+                cityNames.put(airportCode, ""); //To prevent the 429 too many requests when some code its not in the API
+                return "";
+            }
             Map<String, Object> cityName = (Map<String, Object>) codeData.get(0).get("address");
-
-
             cityNames.put(airportCode, ((String) cityName.get("cityName")));
             return ((String) cityName.get("cityName"));
         }
         return cityNames.get(airportCode);
     }
 
+    //Maybe I will not use this method afterall
     @Override
     public String getTotalTime(String initialTime, String finalTime) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
@@ -229,7 +228,6 @@ public class FlightServiceImpl implements FlightService{
         long minutes = duration.toMinutes() % 60;
 
         System.out.println("Hora: " + hours + " Minutos: " + minutes);
-
         return "";
     }
 }
