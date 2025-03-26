@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 public class FlightDetails {
-    //NO TODOS LOS SEGMENTOS TIENEN AMENIDADES???
+    //NOT ALL THE SEGMENTS HAVE AMENITIES??
     private List<Map<String,String>> amenities;
 
     private String classNumber;

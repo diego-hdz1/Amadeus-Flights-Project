@@ -2,7 +2,6 @@ package com.Encora.AmadeusBackend.Service;
 
 import com.Encora.AmadeusBackend.Model.AirportCode;
 import com.Encora.AmadeusBackend.Model.Flight;
-import com.Encora.AmadeusBackend.Model.FlightDetails;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -17,8 +16,6 @@ public interface FlightService {
     String getAirportName(String airportCode);
     String getCityName(String airportCode);
     String getTotalTime(String initialTime, String finalTime);
-    //METODO PARA CHECAR TODO, VERIFICAR Y LANZAR EXCEPCIONES
-
-
+    //Here I need to implement a validation method
 
 }

@@ -1,5 +1,5 @@
 package com.Encora.AmadeusBackend.Repo;
 
-public interface FlightRepoInterface {
+public interface FlightRepositoryInterface {
     String getCity(String IATAcode);
 }

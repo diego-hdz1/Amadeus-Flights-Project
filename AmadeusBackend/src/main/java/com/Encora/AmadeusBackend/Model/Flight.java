@@ -13,8 +13,6 @@ public class Flight {
 
     //the total time of the flight from departure to arrival. This should include the flight time, layover time of all segments (if there are any)
     private String totalTime;
-    //CAMBIAR A LOCALDATETIME???
-
     private Float totalPrice;
     private Float pricePerTraveler;
     private String currency;

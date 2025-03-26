@@ -3,17 +3,13 @@ package com.Encora.AmadeusBackend.Service;
 import com.Encora.AmadeusBackend.Model.AirportCode;
 import com.Encora.AmadeusBackend.Model.Flight;
 import com.Encora.AmadeusBackend.Model.Segments;
-import com.Encora.AmadeusBackend.Repo.FlightRepo;
-import org.apache.catalina.util.RateLimiter;
-import org.apache.coyote.Response;
+import com.Encora.AmadeusBackend.Repo.FlightRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
-//import com.google.common.util.concurrent.RateLimiter;
-
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -23,18 +19,17 @@ import java.util.*;
 public class FlightServiceImpl implements FlightService{
 
     @Autowired
-    FlightRepo flightRepo;
+    FlightRepository flightRepository;
 
   final String CLIENT_ID = System.getProperty("amadeus.client.id", System.getenv("AMADEUS_CLIENT_ID"));
   final String CLIENT_SECRET = System.getProperty("amadeus.client.secret", System.getenv("AMADEUS_CLIENT_SECRET"));
-
 
 
     Map<String, String> airlinesNames = new HashMap<>();
     Map<String, String> cityNames = new HashMap<>();
     Set<String> control = new HashSet<>();
 
-    //CHECAR
+    //TO DO: Implement it on a validation method
     public FlightServiceImpl() throws Exception {
     }
 
@@ -50,7 +45,6 @@ public class FlightServiceImpl implements FlightService{
         body.add("client_secret", CLIENT_SECRET);
 
 
-        //CHECAR ESTO COMPARADO CON EL DE CREATEURL
         HttpEntity<MultiValueMap<String, String>>  request = new HttpEntity<>(body, headers);
         ResponseEntity<Map> response = restTemplate.postForEntity("https://test.api.amadeus.com/v1/security/oauth2/token", request, Map.class);
         return (String) response.getBody().get("access_token");
@@ -63,20 +57,16 @@ public class FlightServiceImpl implements FlightService{
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization","Bearer " + token);
         HttpEntity<String> entity = new HttpEntity<>(headers);
-
         ResponseEntity<Map> response = restTemplate.exchange(specificURL, HttpMethod.GET, entity, Map.class);
-
         return response;
     }
 
     @Override
     public List<AirportCode> getCodes(String keywordToSearch) {
         ResponseEntity<Map> response = createURL("https://test.api.amadeus.com/v1/reference-data/locations?subType=CITY,AIRPORT&keyword="+keywordToSearch);
-        //Se envia al repo y se ejecuta alla para obtener la info
         List<Map<String, Object>> codeData = (List<Map<String, Object>>) response.getBody().get("data");
         List<AirportCode> result = new ArrayList<>();
         for(Map<String, Object> code: codeData){
-
             String codeToPrint = (String) code.get("id");
             String name = (String) code.get("detailedName");
             AirportCode newCode = new AirportCode(name,codeToPrint);
@@ -120,18 +110,21 @@ public class FlightServiceImpl implements FlightService{
             if(control.contains(checkTime)) continue; //To not have the same flight with different id segments
             control.add(checkTime);
 
+
+            //I will move this to the repository layer to a separate method
             for(int i=0; i<returningSements;i++){
                 Map<String, Object> itineraries = ((List<Map<String, Object>>) flight.get("itineraries")).get(i);
                 List<Map<String, Object>> allSegments = ((List<Map<String, Object>>) itineraries.get("segments"));
 
                 for(Map<String, Object> segment: allSegments){
+
                     Map<String, Object> departure = (Map<String, Object>) segment.get("departure");
                     String departureTime = (String) departure.get("at");
                     String initialAirlineCode = (String) departure.get("iataCode");
 
                     Map<String, Object> arrival = (Map<String, Object>) segment.get("arrival");
                     String arrivalTime = (String) arrival.get("at");
-                    String arriveAirlineCode = (String) departure.get("iataCode");
+                    String arriveAirlineCode = (String) arrival.get("iataCode");
 
                     String initialName = getCityName(initialAirlineCode);
                     String arriveName = getCityName(arriveAirlineCode);
@@ -150,19 +143,14 @@ public class FlightServiceImpl implements FlightService{
                     totalSegments.add(newSegment);
                 }
             }
-
             String departureTime = totalSegments.get(0).getInitialDepartureDate();
 
-            //No se si este esta bien
+            //I need to get the final arrival date but without considering the return segments
             String arrivalTime = totalSegments.get(0).getFinalArrivalDate();
             String carrierCode = totalSegments.get(0).getCarrierCode();
 
-
-
-            //MUCHAS REQUESTS AQUI, NO SE PORQUE
-            String airlineName = getAirportName(carrierCode);
-            //String airlineName = "429 ERROR";
-
+            //String airlineName = getAirportName(carrierCode);
+            String airlineName = "prueba";
 
             String totalTime = (String) checkItineraries.get("duration");
             Map<String, Object> price = (Map<String, Object>) flight.get("price");
@@ -197,7 +185,7 @@ public class FlightServiceImpl implements FlightService{
     //Check for 429 Too Many Requests error
     @Override
     public String getCityName(String airportCode) {
-        String cityFromRepo = flightRepo.getCity(airportCode);
+        String cityFromRepo = flightRepository.getCity(airportCode);
         if(!Objects.equals(cityFromRepo, "")) return cityFromRepo;
         if(!cityNames.containsKey(airportCode)){
             System.out.println(airportCode);

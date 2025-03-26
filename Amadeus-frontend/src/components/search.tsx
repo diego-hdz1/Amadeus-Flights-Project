@@ -16,7 +16,7 @@ type FieldType = {
 
 const onFinish: FormProps<FieldType>['onFinish'] = (values) => {
   console.log('Success:', values);
-  //ACCEDER A LA FECHA PARA VER COMO LA ESTA MANEJANDO, PORQUE APARECE COMO "M2"
+  //Find out how the date is being handle because on console it appears as "M2"
 };
 
 const onFinishFailed: FormProps<FieldType>['onFinishFailed'] = (errorInfo) => {
@@ -28,7 +28,7 @@ dayjs.extend(customParseFormat);
 const dateFormat = 'YYYY-MM-DD';
 
 const handleChange = (value: { value: string; label: React.ReactNode }) => {
-    console.log(value); // { value: "lucy", key: "lucy", label: "Lucy (101)" }
+    console.log(value); 
 };  
 
 const onChange: CheckboxProps['onChange'] = (e) => {
@@ -80,9 +80,8 @@ const Search: React.FC = () => (
       rules={[{ required: true, message: 'Please a date' }]}
     >
     <DatePicker
-    defaultValue={today}
     minDate={today}
-    //DEBO DE CAMBIAR PARA QUE SE ACTUALICE LA FECHA SELECCIONADA.
+    //TODO: It needs to change dynamically 
     />
     </Form.Item>
 
@@ -95,6 +94,7 @@ const Search: React.FC = () => (
 
     <DatePicker
     minDate={today.add(1, "day")}
+    //TODO: It needs to change dynamically depending on the selected departure date 
     />
     </Form.Item>
 
@@ -102,7 +102,6 @@ const Search: React.FC = () => (
     
     <Form.Item label="Adults:" name={"adults"}>
     <Select
-    //CAMBIAR TODAS LAS PROPIEDADES PARA QUE QUEDEN BIEN. USAR UN FOR. 
         labelInValue
         defaultValue={{ value: '1', label: '1' }}
         style={{ width: 120 }}
@@ -115,7 +114,7 @@ const Search: React.FC = () => (
     <Form.Item label="Currency: " name={"currency"}>
     <Select
         labelInValue
-        defaultValue={{ value: 'MXN', label: 'MXN' }}
+        // defaultValue={{ value: 'MXN', label: 'MXN' }}
         style={{ width: 120 }}
         onChange={handleChange}
         options={[

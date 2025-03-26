@@ -3,15 +3,12 @@ package com.Encora.AmadeusBackend.Model;
 public class Segments {
     private String initialDepartureDate;
     private String finalArrivalDate;
-
-    //CHECAR ESTO
     private String initialCityName;
     private String arriveCityName;
-
     private String initialAirlineCode;
     private String arriveAirlineCode;
 
-    //ESTO CAPAZ QUE VA EN DETAILS
+    //Maybe this should be in the details
     private String carrierCode;
     private String aircraft;
     private String totalDuration;
