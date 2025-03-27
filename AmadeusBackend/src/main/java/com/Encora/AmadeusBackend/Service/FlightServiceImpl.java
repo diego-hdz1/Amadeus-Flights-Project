@@ -24,7 +24,6 @@ public class FlightServiceImpl implements FlightService{
   final String CLIENT_ID = System.getProperty("amadeus.client.id", System.getenv("AMADEUS_CLIENT_ID"));
   final String CLIENT_SECRET = System.getProperty("amadeus.client.secret", System.getenv("AMADEUS_CLIENT_SECRET"));
 
-
     Map<String, String> airlinesNames = new HashMap<>();
     Map<String, String> cityNames = new HashMap<>();
     Set<String> control = new HashSet<>();
