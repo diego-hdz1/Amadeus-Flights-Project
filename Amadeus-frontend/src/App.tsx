@@ -10,6 +10,7 @@ function App() {
     <>
       <BrowserRouter>
         <Routes >
+          <Route path='/' element={ <Search/> }></Route>
           <Route path='/prueba' element={ <ShowResults/> }></Route>
         </Routes>
       </BrowserRouter>
