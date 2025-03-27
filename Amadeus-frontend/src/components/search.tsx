@@ -5,18 +5,18 @@ import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 
 type FieldType = {
-  username?: string;
-  password?: string;
+  departureAirport?: string;
+  arrivalAirport?: string;
   departureDate?: string;
   returnDate?: string;
+  adults?: number;
   currency?: string;
   nonStop?: boolean;
-
 };
 
 const onFinish: FormProps<FieldType>['onFinish'] = (values) => {
   console.log('Success:', values);
-  //ACCEDER A LA FECHA PARA VER COMO LA ESTA MANEJANDO, PORQUE APARECE COMO "M2"
+  //Find out how the date is being handle because on console it appears as "M2"
 };
 
 const onFinishFailed: FormProps<FieldType>['onFinishFailed'] = (errorInfo) => {
@@ -28,12 +28,21 @@ dayjs.extend(customParseFormat);
 const dateFormat = 'YYYY-MM-DD';
 
 const handleChange = (value: { value: string; label: React.ReactNode }) => {
-    console.log(value); // { value: "lucy", key: "lucy", label: "Lucy (101)" }
+    console.log(value); 
 };  
 
 const onChange: CheckboxProps['onChange'] = (e) => {
     console.log(`checked = ${e.target.checked}`);
   };
+
+  const today = dayjs();
+  let optionsCount = [];
+  for(let i = 1; i<10;i++){
+    optionsCount.push({
+      "value": i,
+      "label":i
+    });
+  }
 
 
 const Search: React.FC = () => (
@@ -51,7 +60,7 @@ const Search: React.FC = () => (
   >
     <Form.Item<FieldType>
       label="Departure Airport"
-      name="username"
+      name={"departureAirport"}
       rules={[{ required: true, message: 'Please input the departure airport' }]}
     >
       <Input />
@@ -59,7 +68,7 @@ const Search: React.FC = () => (
 
     <Form.Item<FieldType>
       label="Arrival Airport"
-      name="password"
+      name={"arrivalAirport"}
       rules={[{ required: true, message: 'Please input the arrival airport' }]}
     >
       <Input/>
@@ -71,9 +80,8 @@ const Search: React.FC = () => (
       rules={[{ required: true, message: 'Please a date' }]}
     >
     <DatePicker
-    defaultValue={dayjs('2019-09-03', dateFormat)}
-    minDate={dayjs('2019-08-01', dateFormat)}
-    // maxDate={dayjs('2020-10-31', dateFormat)}
+    minDate={today}
+    //TODO: It needs to change dynamically 
     />
     </Form.Item>
 
@@ -85,63 +93,48 @@ const Search: React.FC = () => (
     >
 
     <DatePicker
-    // defaultValue={dayjs('2025-09-03', dateFormat)}
-    minDate={dayjs('2019-08-01', dateFormat)}
-    // maxDate={dayjs('2025-09-03', dateFormat)}
+    minDate={today.add(1, "day")}
+    //TODO: It needs to change dynamically depending on the selected departure date 
     />
     </Form.Item>
 
 
     
-    <Form.Item label="Adults: ">
+    <Form.Item label="Adults:" name={"adults"}>
     <Select
-    //CAMBIAR TODAS LAS PROPIEDADES PARA QUE QUEDEN BIEN. USAR UN FOR. 
         labelInValue
-        defaultValue={{ value: 'lucy', label: '1' }}
+        defaultValue={{ value: '1', label: '1' }}
         style={{ width: 120 }}
         onChange={handleChange}
-        options={[
-        {
-            value: 'jack',
-            label: '1',
-        },
-        {
-            value: 'lucy',
-            label: '2',
-        },
-        {
-            value: 'something',
-            label: '3',
-        },
-        ]}
+        options={optionsCount}
     />
     </Form.Item>
 
 
-    <Form.Item label="Currency: ">
+    <Form.Item label="Currency: " name={"currency"}>
     <Select
         labelInValue
-        defaultValue={{ value: 'lucy', label: 'MXN' }}
+        // defaultValue={{ value: 'MXN', label: 'MXN' }}
         style={{ width: 120 }}
         onChange={handleChange}
         options={[
         {
-            value: 'jack',
+            value: 'MXN',
             label: 'MXN',
         },
         {
-            value: 'lucy',
+            value: 'USD',
             label: 'USD',
         },
         {
-            value: 'something',
+            value: 'EUR',
             label: 'EUR',
         },
         ]}
     />
     </Form.Item>
 
-    <Form.Item label={null}>
+    <Form.Item label={null} name={"nonStop"}>
     <Checkbox onChange={onChange}>Non-Stop</Checkbox>
     </Form.Item>
 

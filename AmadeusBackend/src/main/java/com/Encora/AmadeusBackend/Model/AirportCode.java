@@ -3,7 +3,6 @@ package com.Encora.AmadeusBackend.Model;
 public class AirportCode {
     private String detailedName;
     private String airportCode;
-    //PONER MAS DATOS???
 
     public AirportCode(String detailedName, String airportCode) {
         this.detailedName = detailedName;

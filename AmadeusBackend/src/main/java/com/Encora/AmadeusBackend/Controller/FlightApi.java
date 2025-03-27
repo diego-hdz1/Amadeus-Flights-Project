@@ -10,13 +10,7 @@ import java.util.List;
 
 public interface FlightApi {
 
-    //Se hacen los mappings del frontend con este backend.
-    //Despues con este backend en el service se le habla a la API amadeus
 
-
-    //GET para los codigos
-    //GET para buscar los vuelos dependiendo de los parametros que me enviaron
-    //GET con id para ver especificamente los datos del vuelo
     @GetMapping("/codes")
     ResponseEntity<List<AirportCode>> getCodes(
             @RequestParam(required = false) String keyword
@@ -32,8 +26,4 @@ public interface FlightApi {
             @RequestParam(required = true) Boolean nonStop,
             @RequestParam(required = false) String currencyCode
     );
-
-    //PARA LOS DETAILS COMO SERA LA CONSULTA??
-
-
 }
