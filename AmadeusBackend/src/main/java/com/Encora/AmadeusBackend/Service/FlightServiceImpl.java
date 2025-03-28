@@ -58,11 +58,11 @@ public class FlightServiceImpl implements FlightService{
 
     @Override
     public List<AirportCode> getCodes(String keywordToSearch) {
-        ResponseEntity<Map> response = createURL("https://test.api.amadeus.com/v1/reference-data/locations?subType=CITY,AIRPORT&keyword="+keywordToSearch);
+        ResponseEntity<Map> response = createURL("https://test.api.amadeus.com/v1/reference-data/locations?subType=AIRPORT&keyword="+keywordToSearch+"&sort=analytics.travelers.score&view=LIGHT");
         List<Map<String, Object>> codeData = (List<Map<String, Object>>) response.getBody().get("data");
         List<AirportCode> result = new ArrayList<>();
         for(Map<String, Object> code: codeData){
-            String codeToPrint = (String) code.get("id");
+            String codeToPrint = (String) code.get("iataCode");
             String name = (String) code.get("detailedName");
             AirportCode newCode = new AirportCode(name,codeToPrint);
             result.add(newCode);
@@ -83,6 +83,7 @@ public class FlightServiceImpl implements FlightService{
 
         ResponseEntity<Map> response  = createURL(builder.toString());
         List<Map<String, Object>> flightData = (List<Map<String, Object>>) response.getBody().get("data");
+        Map<String, Object> dictionaries = ((Map<String, Object>) response.getBody().get("dictionaries"));
         List<Flight> flights = new ArrayList<>();
 
         for(Map<String, Object> flight: flightData){
@@ -105,6 +106,7 @@ public class FlightServiceImpl implements FlightService{
 
             List<Map<String, Object>> travelerPricings = ((List<Map<String, Object>>) flight.get("travelerPricings"));
             List<Map<String, Object>> fareDetailsBySegment = ((List<Map<String, Object>>) travelerPricings.get(0).get("fareDetailsBySegment"));
+            Map<String, Object> dicAircrafts = ((Map<String, Object>) dictionaries.get("aircraft"));
             int segmentCount = 0;
 
             //I will move this to the repository layer to a separate method
@@ -132,7 +134,8 @@ public class FlightServiceImpl implements FlightService{
 
                     Map<String, Object> aircraft = (Map<String, Object>) segment.get("aircraft");
                     //Maybe put the name of the Airline with the airline code here as well
-                    String aircraftCode = (String) aircraft.get("code");
+                    String preCode = (String) aircraft.get("code") ;
+                    String aircraftCode = (String) dicAircrafts.get(preCode);
                     String totalDuration = (String) segment.get("duration");
 
                     //Get total, fees and base
@@ -167,7 +170,8 @@ public class FlightServiceImpl implements FlightService{
                 String arrivalTime = totalSegments.get(totalSegments.size()-1).getFinalArrivalDate();
                 String carrierCode = totalSegments.get(0).getCarrierCode();
 
-                String airlineName = getAirportName(carrierCode);
+                Map<String, Object> carriers = ((Map<String, Object>) dictionaries.get("carriers"));
+                String airlineName = (String) carriers.get(carrierCode);
 
                 Map<String, Object> checkTotalTime = ((List<Map<String, Object>>) flight.get("itineraries")).get(i);
                 String totalTime = (String) checkTotalTime.get("duration");
