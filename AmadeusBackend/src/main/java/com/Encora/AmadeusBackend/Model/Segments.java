@@ -1,5 +1,8 @@
 package com.Encora.AmadeusBackend.Model;
 
+import java.util.List;
+import java.util.Map;
+
 public class Segments {
     private String initialDepartureDate;
     private String finalArrivalDate;
@@ -12,6 +15,10 @@ public class Segments {
     private String carrierCode;
     private String aircraft;
     private String totalDuration;
+    private List<Map<String,Boolean>> amenities;
+    private String classNumber;
+    private String cabin;
+    private FlightDetails flightDetails;
 
     @Override
     public String toString() {
@@ -28,7 +35,8 @@ public class Segments {
                 '}';
     }
 
-    public Segments(String initialDepartureDate, String finalArrivalDate, String arriveCityName, String initialCityName, String initialAirlineCode, String arriveAirlineCode, String carrierCode, String aircraft, String totalDuration) {
+    public Segments(String initialDepartureDate, String finalArrivalDate, String arriveCityName, String initialCityName, String initialAirlineCode, String arriveAirlineCode, String carrierCode, String aircraft, String totalDuration
+    ,List<Map<String,Boolean>> amenities, String classNumber, String cabin, FlightDetails flightDetails) {
         this.initialDepartureDate = initialDepartureDate;
         this.finalArrivalDate = finalArrivalDate;
         this.arriveCityName = arriveCityName;
@@ -38,6 +46,42 @@ public class Segments {
         this.carrierCode = carrierCode;
         this.aircraft = aircraft;
         this.totalDuration = totalDuration;
+        this.amenities = amenities;
+        this.classNumber = classNumber;
+        this.cabin = cabin;
+        this.flightDetails = flightDetails;
+    }
+
+    public FlightDetails getFlightDetails() {
+        return flightDetails;
+    }
+
+    public void setFlightDetails(FlightDetails flightDetails) {
+        this.flightDetails = flightDetails;
+    }
+
+    public List<Map<String, Boolean>> getAmenities() {
+        return amenities;
+    }
+
+    public void setAmenities(List<Map<String, Boolean>> amenities) {
+        this.amenities = amenities;
+    }
+
+    public String getClassNumber() {
+        return classNumber;
+    }
+
+    public void setClassNumber(String classNumber) {
+        this.classNumber = classNumber;
+    }
+
+    public String getCabin() {
+        return cabin;
+    }
+
+    public void setCabin(String cabin) {
+        this.cabin = cabin;
     }
 
     public String getInitialDepartureDate() {

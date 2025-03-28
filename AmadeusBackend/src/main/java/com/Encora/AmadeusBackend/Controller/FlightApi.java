@@ -26,4 +26,8 @@ public interface FlightApi {
             @RequestParam(required = true) Boolean nonStop,
             @RequestParam(required = false) String currencyCode
     );
+
+    //Want to create and enpoint to perform Sorting
+
+    //If time is good, I want to create an endpoint to handle pagination
 }
