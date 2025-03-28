@@ -49,10 +49,6 @@ const Search: React.FC<SearchProps> = ({
   dayjs.extend(customParseFormat);
   const dateFormat = 'YYYY-MM-DD';
   
-  const handleChange = (value: { value: string; label: React.ReactNode }) => {
-      console.log(value); 
-  };  
-
   const today = dayjs();
   let optionsCount = [];
   for(let i = 1; i<10;i++){
@@ -96,10 +92,7 @@ const Search: React.FC<SearchProps> = ({
         name={"departureDate"}
         rules={[{ required: true, message: 'Please input a date' }]}
       >
-      <DatePicker
-      minDate={today}
-      //TODO: It needs to change dynamically 
-      />
+      <DatePicker minDate={today}/>
       </Form.Item>
 
 
@@ -120,7 +113,6 @@ const Search: React.FC<SearchProps> = ({
           labelInValue = {true}
           defaultValue={{ value: '0', label: '-' }}
           style={{ width: 120 }}
-          onChange={handleChange}
           options={optionsCount}
       />
       </Form.Item>
@@ -129,7 +121,6 @@ const Search: React.FC<SearchProps> = ({
       <Select
           labelInValue = {true}
           style={{ width: 120 }}
-          onChange={handleChange}
           options={[
           {
               value: 'MXN',
