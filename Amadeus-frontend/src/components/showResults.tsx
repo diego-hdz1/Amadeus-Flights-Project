@@ -79,9 +79,9 @@ const ShowResults: React.FC<ShowResultsProps> = ({
                         <p>Total: {currentCard[0].flightDetails.total}</p>
                         <p>Per traveler</p>
                     </Card>
-                    {currentCard.map((segment:any)=>(
+                    {currentCard.map((segment:any, index:number)=>(
                         <Card key={segment.flightId}>   
-                        <h2>Segment 1</h2>
+                        <h2>Segment {index+1}</h2>
                         <p>{segment.initialDepartureDate} - {segment.finalArrivalDate}</p>
                         <p>{segment.initialCityName} ({segment.initialAirlineCode}) - {segment.arriveCityName} ({segment.arriveAirlineCode})</p>
                         <p>({segment.carrierCode}) {segment.aircraft}</p>
@@ -90,7 +90,16 @@ const ShowResults: React.FC<ShowResultsProps> = ({
                             <h3>Details per travel</h3>
                             <p>Class: {segment.classNumber}</p>
                             <p>Cabin: {segment.cabin}</p>
-                            
+                            <h4>Amenities:</h4>
+                            <ul>
+                                {segment.amenities && 
+                                    segment.amenities.map((amenity: Record<string, boolean>, index:number) =>
+                                    Object.entries(amenity)
+                                    .map(([key, value]) => <li key={`${key}-${index}`}>
+                                        {key} ({value == true ? `Chargeable` : `Not chargeable`})
+                                        </li>)
+                                )}
+                            </ul>
                         </Card>
                         </Card>
                     ))}

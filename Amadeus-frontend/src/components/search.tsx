@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { FormProps, CheckboxProps } from 'antd';
-import { Button, Checkbox, Form, Input, DatePicker, Select, Card, Space } from 'antd';
+import { Button, Checkbox, Form, Input, DatePicker, Select, Card, Space, AutoComplete } from 'antd';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import {PORT} from '../constants';
 import { useNavigate } from 'react-router-dom';
+import axios from "axios";
 
 interface SearchProps{
   handleSetUrl: (value:string) => void;
@@ -58,6 +59,40 @@ const Search: React.FC<SearchProps> = ({
     });
   }
 
+  const [query, setQuery] = useState("");
+  const [options, setOptions] = useState<{value:string, label:string}[]>([]);
+  const [loading, setLoading] = useState(false);
+  // const [data, setData] = useState<any>();
+
+  const fetchAirports = async (keyword:string) => {
+    setLoading(true);
+    let data:any = [];
+    await axios.get(`http://localhost:${PORT}/codes?keyword=${keyword}`).then((response)=>{
+      data = response.data;
+      console.log(data);
+    }).catch(error =>{console.log(error);})
+    console.log(data);
+    setOptions(
+      data.map((airport: {detailedName:string, airportCode:string}) => ({
+        value: airport.airportCode,
+        label: `${airport.detailedName} (${airport.airportCode})`,
+      }))
+    );
+    setLoading(false);
+  }
+
+  useEffect(()=>{
+    if(query.length < 3){
+      setOptions([]);
+      return;
+    }
+    const debounce = setTimeout(()=>{
+      fetchAirports(query);
+    }, 500);
+    return () => clearTimeout(debounce);
+  }, [query]);
+
+
   return(
     <Space direction="vertical" size={16}>
     <Card title="Check your flight" style={{ width: 1100, backgroundColor:"Gray"}}>
@@ -76,15 +111,33 @@ const Search: React.FC<SearchProps> = ({
         name={"departureAirport"}
         rules={[{ required: true, message: 'Please input the departure airport' }]}
       >
-        <Input />
+
+      <AutoComplete
+        options={options}
+        style={{ width: 300}}
+        onSearch={setQuery}
+        onSelect={(value)=> console.log("Selected airport: ", value)}
+      >
+        <Input.Search loading={loading}/>
+      </AutoComplete>
       </Form.Item>
+
 
       <Form.Item<FieldType>
         label="Arrival Airport"
         name={"arrivalAirport"}
         rules={[{ required: true, message: 'Please input the arrival airport' }]}
       >
-        <Input/>
+        
+        <AutoComplete
+        options={options}
+        style={{ width: 300}}
+        onSearch={setQuery}
+        onSelect={(value)=> console.log("Selected airport: ", value)}
+      >
+        <Input.Search loading={loading}/>
+      </AutoComplete>
+
       </Form.Item>
 
       <Form.Item<FieldType>
@@ -144,7 +197,7 @@ const Search: React.FC<SearchProps> = ({
 
       <Form.Item label={null}>
         <Button type="primary" htmlType="submit">
-          Submit
+          Search
         </Button>
       </Form.Item>
 
