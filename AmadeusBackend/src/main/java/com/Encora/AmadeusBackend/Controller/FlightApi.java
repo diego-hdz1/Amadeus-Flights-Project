@@ -27,7 +27,11 @@ public interface FlightApi {
             @RequestParam(required = false) String currencyCode
     );
 
-    //Want to create and enpoint to perform Sorting
+    @GetMapping("/sort")
+    ResponseEntity<List<Flight>> sortFlights(
+            @RequestParam(required = true) Integer orderPrice,
+            @RequestParam(required = true) Integer orderDate
+    );
 
     //If time is good, I want to create an endpoint to handle pagination
 }

@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+
+import java.time.Duration;
+import java.time.LocalTime;
 import java.util.*;
 
 @Service
@@ -175,16 +178,21 @@ public class FlightServiceImpl implements FlightService{
 
                 Map<String, Object> checkTotalTime = ((List<Map<String, Object>>) flight.get("itineraries")).get(i);
                 String totalTime = (String) checkTotalTime.get("duration");
+
+                Duration duration = Duration.parse(totalTime);
+                LocalTime time = LocalTime.MIDNIGHT.plus(duration); //TO DO: Check the midnight
+
                 Map<String, Object> price = (Map<String, Object>) flight.get("price");
 
                 Float totalPrice = Float.valueOf((String) price.get("total"));
                 Float pricePerTraveler = totalPrice/adults;
                 String currencyName = (String) price.get("currency");
 
-                Flight newFlight = new Flight(flightId, departureTime, arrivalTime, airlineName, carrierCode, totalTime, totalPrice, pricePerTraveler, currencyName, totalSegments);
+                Flight newFlight = new Flight(flightId, departureTime, arrivalTime, airlineName, carrierCode, time, totalPrice, pricePerTraveler, currencyName, totalSegments);
                 flights.add(newFlight);
             }
         }
+        flightRepository.cachedList = flights;
         return flights;
     }
 
@@ -226,5 +234,30 @@ public class FlightServiceImpl implements FlightService{
             return ((String) cityName.get("cityName"));
         }
         return cityNames.get(airportCode);
+    }
+
+    @Override
+    public List<Flight> sortFlighs(Integer orderPrice, Integer orderDate) {
+        List<Flight> cachedList = flightRepository.cachedList;
+
+        if(orderPrice == 1 && orderDate == 1) return cachedList;
+        if(orderPrice == 3 && orderDate ==1) {cachedList.sort(Comparator.comparingDouble(Flight::getTotalPrice));}
+        else if(orderPrice ==2 && orderDate == 1) {cachedList.sort(Comparator.comparingDouble(Flight::getTotalPrice).reversed());}
+        else if(orderPrice == 1 && orderDate == 3) {cachedList.sort(Comparator.comparing(Flight::getTotalTime, Comparator.nullsLast(LocalTime::compareTo)));}
+        else if(orderPrice ==1 && orderDate ==2) {cachedList.sort(Comparator.comparing(Flight::getTotalTime, Comparator.nullsFirst(LocalTime::compareTo)).reversed());}
+        else if(orderPrice == 2 && orderDate == 2){
+            cachedList.sort(Comparator.comparing(Flight::getTotalPrice).reversed()
+                    .thenComparing(Flight::getTotalTime, Comparator.nullsLast(LocalTime::compareTo)));
+        }else if(orderPrice == 2 && orderDate == 3){
+            cachedList.sort(Comparator.comparing(Flight::getTotalPrice)
+                    .thenComparing(Flight::getTotalTime, Comparator.nullsFirst(LocalTime::compareTo)).reversed());
+        }else if(orderPrice == 3 && orderDate ==2){
+            cachedList.sort(Comparator.comparing(Flight::getTotalPrice).reversed()
+                    .thenComparing(Flight::getTotalTime, Comparator.nullsFirst(LocalTime::compareTo)));
+        }else if(orderPrice == 3 && orderDate == 3){
+            cachedList.sort(Comparator.comparingDouble(Flight::getTotalPrice)
+                    .thenComparing(Flight::getTotalTime, Comparator.nullsLast(LocalTime::compareTo).reversed()));
+        }
+        return cachedList;
     }
 }

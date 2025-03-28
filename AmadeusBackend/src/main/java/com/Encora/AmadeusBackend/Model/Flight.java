@@ -1,5 +1,6 @@
 package com.Encora.AmadeusBackend.Model;
 
+import java.time.LocalTime;
 import java.util.List;
 
 public class Flight {
@@ -12,13 +13,13 @@ public class Flight {
     //The name and code of the operating airline (only if different from the main airline)
 
     //the total time of the flight from departure to arrival. This should include the flight time, layover time of all segments (if there are any)
-    private String totalTime;
+    private LocalTime totalTime;
     private Float totalPrice;
     private Float pricePerTraveler;
     private String currency;
     private List<Segments> segments;
 
-    public Flight(Integer flightId, String initialDepartureDate, String finalArrivalDate, String airlineName, String airlineCode, String totalTime, Float totalPrice, Float pricePerTraveler, String currency, List<Segments> segments) {
+    public Flight(Integer flightId, String initialDepartureDate, String finalArrivalDate, String airlineName, String airlineCode, LocalTime totalTime, Float totalPrice, Float pricePerTraveler, String currency, List<Segments> segments) {
         this.flightId = flightId;
         this.initialDepartureDate = initialDepartureDate;
         this.finalArrivalDate = finalArrivalDate;
@@ -86,11 +87,11 @@ public class Flight {
         this.airlineName = airlineName;
     }
 
-    public String getTotalTime() {
+    public LocalTime getTotalTime() {
         return totalTime;
     }
 
-    public void setTotalTime(String totalTime) {
+    public void setTotalTime(LocalTime totalTime) {
         this.totalTime = totalTime;
     }
 

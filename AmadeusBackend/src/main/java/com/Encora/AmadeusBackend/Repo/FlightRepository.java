@@ -1,13 +1,17 @@
 package com.Encora.AmadeusBackend.Repo;
 
+import com.Encora.AmadeusBackend.Model.Flight;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Repository
 public class FlightRepository implements FlightRepositoryInterface {
     private static final Map<String, String> airport = new HashMap<>();
+    public List<Flight> cachedList = new ArrayList<>();
 
     static {
         airport.put("TPE", "Xiamen, China");

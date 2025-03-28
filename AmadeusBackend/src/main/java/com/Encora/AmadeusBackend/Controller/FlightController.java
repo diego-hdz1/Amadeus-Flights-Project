@@ -30,4 +30,9 @@ public class FlightController implements FlightApi{
                 returnDate, adults, nonStop, currencyCode),
                 HttpStatus.OK);
     }
+
+    @Override
+    public ResponseEntity<List<Flight>> sortFlights(Integer orderPrice, Integer orderDate) {
+        return new ResponseEntity<>(flightService.sortFlighs(orderPrice, orderDate), HttpStatus.OK);
+    }
 }
