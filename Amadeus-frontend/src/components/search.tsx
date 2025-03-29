@@ -40,7 +40,7 @@ const Search: React.FC<SearchProps> = ({
   
     let url = `http://localhost:${PORT}/flights?departureAirportCode=${departureAirport}&arrivalAirportCode=${arrivalAirport}&departureDate=${departureDate}&returnDate=${returnDate}&adults=${adults}&nonStop=${nonStop}&currencyCode=${currency}`;
     handleSetUrl(url);
-    navigator('/prueba');
+    navigator('/showResult');
   };
   
   const onFinishFailed: FormProps<FieldType>['onFinishFailed'] = (errorInfo) => {
@@ -62,16 +62,13 @@ const Search: React.FC<SearchProps> = ({
   const [query, setQuery] = useState("");
   const [options, setOptions] = useState<{value:string, label:string}[]>([]);
   const [loading, setLoading] = useState(false);
-  // const [data, setData] = useState<any>();
 
   const fetchAirports = async (keyword:string) => {
     setLoading(true);
     let data:any = [];
     await axios.get(`http://localhost:${PORT}/codes?keyword=${keyword}`).then((response)=>{
       data = response.data;
-      console.log(data);
     }).catch(error =>{console.log(error);})
-    console.log(data);
     setOptions(
       data.map((airport: {detailedName:string, airportCode:string}) => ({
         value: airport.airportCode,
@@ -95,7 +92,7 @@ const Search: React.FC<SearchProps> = ({
 
   return(
     <Space direction="vertical" size={16}>
-    <Card title="Check your flight" style={{ width: 1100, backgroundColor:"Gray"}}>
+    <Card title="Check your flight" className='show-card'>
     <Form
       name="basic"
       labelCol={{ span: 10 }}
@@ -117,6 +114,7 @@ const Search: React.FC<SearchProps> = ({
         style={{ width: 300}}
         onSearch={setQuery}
         onSelect={(value)=> console.log("Selected airport: ", value)}
+        
       >
         <Input.Search loading={loading}/>
       </AutoComplete>
@@ -196,7 +194,7 @@ const Search: React.FC<SearchProps> = ({
       </Form.Item>
 
       <Form.Item label={null}>
-        <Button type="primary" htmlType="submit">
+        <Button type="primary" htmlType="submit" className='return-button'>
           Search
         </Button>
       </Form.Item>
