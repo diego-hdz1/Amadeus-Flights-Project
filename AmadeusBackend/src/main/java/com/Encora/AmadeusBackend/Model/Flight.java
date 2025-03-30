@@ -35,7 +35,8 @@ public class Flight {
     @Override
     public String toString() {
         return "Flight{" +
-                "initialDepartureDate='" + initialDepartureDate + '\'' +
+                "flightId=" + flightId +
+                ", initialDepartureDate='" + initialDepartureDate + '\'' +
                 ", finalArrivalDate='" + finalArrivalDate + '\'' +
                 ", airlineName='" + airlineName + '\'' +
                 ", airlineCode='" + airlineCode + '\'' +

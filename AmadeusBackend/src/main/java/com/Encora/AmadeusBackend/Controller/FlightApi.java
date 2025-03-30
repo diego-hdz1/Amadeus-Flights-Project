@@ -33,5 +33,10 @@ public interface FlightApi {
             @RequestParam(required = true) Integer orderDate
     );
 
+    @GetMapping("/paginate")
+    ResponseEntity<List<Flight>> paginateFlights(
+            @RequestParam(required = true) Integer pageNumber
+    );
+
     //If time is good, I want to create an endpoint to handle pagination
 }

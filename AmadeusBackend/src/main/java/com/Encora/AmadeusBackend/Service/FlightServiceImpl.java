@@ -6,12 +6,12 @@ import com.Encora.AmadeusBackend.Model.FlightDetails;
 import com.Encora.AmadeusBackend.Model.Segments;
 import com.Encora.AmadeusBackend.Repo.FlightRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cglib.core.Local;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import javax.swing.text.Segment;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.*;
@@ -27,24 +27,15 @@ public class FlightServiceImpl implements FlightService{
     final String CLIENT_SECRET = System.getenv("MY_API_SECRET");
     Map<String, String> airlinesNames = new HashMap<>();
     Map<String, String> cityNames = new HashMap<>();
-    Set<String> control = new HashSet<>();
-
-    //TO DO: Implement it on a validation method
-    public FlightServiceImpl() throws Exception {
-    }
 
     @Override
     public String getAccessToken(){
         RestTemplate restTemplate = new RestTemplate();
+        String requestBody = "grant_type=client_credentials" + "&client_id=" + CLIENT_ID + "&client_secret=" + CLIENT_SECRET;
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("grant_type", "client_credentials");
-        body.add("client_id", CLIENT_ID);
-        body.add("client_secret", CLIENT_SECRET);
-
-        HttpEntity<MultiValueMap<String, String>>  request = new HttpEntity<>(body, headers);
-        ResponseEntity<Map> response = restTemplate.postForEntity("https://test.api.amadeus.com/v1/security/oauth2/token", request, Map.class);
+        HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
+        ResponseEntity<Map> response = restTemplate.exchange("https://test.api.amadeus.com/v1/security/oauth2/token", HttpMethod.POST, request, Map.class);
         return (String) response.getBody().get("access_token");
     }
 
@@ -54,6 +45,7 @@ public class FlightServiceImpl implements FlightService{
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization","Bearer " + token);
+        headers.set("Content-Type", "application/json");
         HttpEntity<String> entity = new HttpEntity<>(headers);
         ResponseEntity<Map> response = restTemplate.exchange(specificURL, HttpMethod.GET, entity, Map.class);
         return response;
@@ -75,6 +67,7 @@ public class FlightServiceImpl implements FlightService{
 
     @Override
     public List<Flight> getFlights(String departureAirportCode, String arrivalAirportCode, String departureDate, String arrivalDate, Integer adults, Boolean nonStop, String currency) {
+        validateData(departureAirportCode, arrivalAirportCode, departureDate, arrivalDate, adults, nonStop, currency);
         StringBuilder builder = new StringBuilder("https://test.api.amadeus.com/v2/shopping/flight-offers?");
         builder.append("originLocationCode=").append(departureAirportCode).append("&destinationLocationCode=").append(arrivalAirportCode).
                 append("&departureDate=").append(departureDate);
@@ -83,11 +76,12 @@ public class FlightServiceImpl implements FlightService{
                 }
                 builder.append("&adults=").append(adults).
                 append("&nonStop=").append(nonStop).append("&currencyCode=").append(currency).append("&max=150");
-
         ResponseEntity<Map> response  = createURL(builder.toString());
         List<Map<String, Object>> flightData = (List<Map<String, Object>>) response.getBody().get("data");
         Map<String, Object> dictionaries = ((Map<String, Object>) response.getBody().get("dictionaries"));
+
         List<Flight> flights = new ArrayList<>();
+        Set<String> control = new HashSet<>();
 
         for(Map<String, Object> flight: flightData){
             Integer flightId = Integer.valueOf((String) flight.get("id"));
@@ -144,7 +138,10 @@ public class FlightServiceImpl implements FlightService{
                     //Get total, fees and base
                     Map<String, Object> flightDetails = (Map<String, Object>) flight.get("price");
                     String total = (String) flightDetails.get("total");
-                    String fees = "TEST";
+
+
+                    List<Map<String, Object>> totalFees = ((List<Map<String, Object>>) flightDetails.get("fees"));
+                    String fees = (String)totalFees.get(0).get("amount") + " " + (String)totalFees.get(0).get("type");
                     String base = (String) flightDetails.get("base");
                     FlightDetails finalFlightDetails = new FlightDetails(total, fees, base);
 
@@ -197,7 +194,6 @@ public class FlightServiceImpl implements FlightService{
     }
 
     //Check for 429 Too Many Requests error, I think is because we call it in less than a minute
-    //Check out the batch API call option
     @Override
     public String getAirportName(String airportCode) {
         if(!airlinesNames.containsKey(airportCode)){
@@ -237,7 +233,7 @@ public class FlightServiceImpl implements FlightService{
     }
 
     @Override
-    public List<Flight> sortFlighs(Integer orderPrice, Integer orderDate) {
+    public List<Flight> sortFligths(Integer orderPrice, Integer orderDate) {
         List<Flight> cachedList = flightRepository.cachedList;
 
         if(orderPrice == 1 && orderDate == 1) return cachedList;
@@ -258,6 +254,41 @@ public class FlightServiceImpl implements FlightService{
             cachedList.sort(Comparator.comparingDouble(Flight::getTotalPrice)
                     .thenComparing(Flight::getTotalTime, Comparator.nullsLast(LocalTime::compareTo).reversed()));
         }
-        return cachedList;
+        flightRepository.cachedList = cachedList;
+//        FlightDetails flightDetails = new FlightDetails("-1", "-1", "1");
+//        List<Map<String,Boolean>> amenities =  new ArrayList<Map<String, Boolean>>();
+//        Segments segment = new Segments("-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1",amenities, "-1", "-1", flightDetails);
+//        List<Segments> segments = new ArrayList<>(Arrays.asList(segment, segment));
+//        Flight mockFlight = new Flight(-1, "-1", "-1", "-1", "-1", LocalTime.of(10,0), 1F, 1F, "-1", segments);
+//        System.out.println(mockFlight);
+//        cachedList.add(mockFlight);
+        int size = cachedList.size();
+        return cachedList.subList(0, 10);
+    }
+
+    @Override
+    public void validateData(String departureAirportCode, String arrivalAirportCode, String departureDate, String arrivalDate, Integer adults, Boolean nonStop, String currency) {
+        if(departureAirportCode == null || arrivalAirportCode == null){
+            throw new ValidationException("Airport codes cannot be null");
+        }
+        if(departureDate == null){
+            throw new ValidationException("Departure date cannot be null");
+        }
+        if(adults == null){
+            throw new ValidationException("Adults cannot be null");
+        }
+        if(adults < 0 || adults > 9){
+            throw new ValidationException("Adult value must be between 1 and 9");
+        }
+        if(currency == null){
+            throw new ValidationException("Currency cannot be null");
+        }
+        if(nonStop == null){
+            throw new ValidationException("Non stop cannot be null");
+        }
+        if(departureAirportCode.length() != 3 || arrivalAirportCode.length() !=3){
+            throw new ValidationException("Airport codes must be of length 3");
+        }
+
     }
 }

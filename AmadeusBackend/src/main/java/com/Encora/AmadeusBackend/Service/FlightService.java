@@ -15,7 +15,6 @@ public interface FlightService {
     List<Flight> getFlights(String departureAirportCode, String arrivalAirportCode, String departureDate, String arrivalDate, Integer adults, Boolean nonStop, String currency);
     String getAirportName(String airportCode);
     String getCityName(String airportCode);
-    List<Flight> sortFlighs(Integer orderPrice, Integer orderDate);
-
-    //Here I need to implement a validation method I will use the cached list when changing pages
+    List<Flight> sortFligths(Integer orderPrice, Integer orderDate);
+    void validateData(String departureAirportCode, String arrivalAirportCode, String departureDate, String arrivalDate, Integer adults, Boolean nonStop, String currency);
 }

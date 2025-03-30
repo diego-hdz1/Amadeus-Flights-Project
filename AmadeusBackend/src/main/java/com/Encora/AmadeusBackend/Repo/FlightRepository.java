@@ -14,6 +14,7 @@ public class FlightRepository implements FlightRepositoryInterface {
     public List<Flight> cachedList = new ArrayList<>();
 
     static {
+        airport.put("AVV", "Avalon, Australia");
         airport.put("TPE", "Xiamen, China");
         airport.put("HAN", "Hanoi, Vietnam");
         airport.put("HKG", "Hong Kong, China");
