@@ -1,12 +1,12 @@
 import { Card, Col, Row, Modal} from "antd";
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 interface ShowResultsProps{
     url:string;
     data: any[];
-    setData: React.Dispatch<React.SetStateAction<any[]>>;
+    //setData: React.Dispatch<React.SetStateAction<any[]>>;
+    setData: (data:any) => void;
 }
 
 const ShowResults: React.FC<ShowResultsProps> = ({
@@ -16,9 +16,7 @@ const ShowResults: React.FC<ShowResultsProps> = ({
 }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentCard, setCurrentCard] = useState<any| null>(null);
-    const [filterPrice, setFilterPrice] = useState(1);
-    const [filterDate, setFilterDate] = useState(1);
-    const navigator = useNavigate();
+    const [currency, setCurrency] = useState("");
 
     const showModal = (segments:any) => {
         setCurrentCard(segments);
@@ -42,62 +40,50 @@ const ShowResults: React.FC<ShowResultsProps> = ({
         fetchData();}
     }, [location]);
 
-    const handleFilter = async () =>{
-        console.log(filterPrice);
-        console.log(filterDate);
-        //`http://localhost:8080/sort?orderPrice=${filterPrice}&orderDate=${filterDate}`
-        await axios.get(`http://localhost:8080/sort?orderPrice=2&orderDate=1`).then((response)=>{
-            setData(response.data);
-            console.log(response.data);
-            console.log(data);
-            // navigator("/loading");
-        }).catch(error =>{console.log(error);})
-    }
-
     return (
-        <div>
-            <button onClick={()=>navigator("/")} className="return-button">Return to search</button>
-            <div> 
-            <form className="add-form">
-                <h3>Choose your options to filter</h3>
-                <select value={filterPrice} onChange={(e)=>setFilterPrice(Number(e.target.value))}>
-                    <option value={1}>Ascending price</option>
-                    <option value={2}>Descending price</option>
-                </select>
-                <select value={filterDate} onChange={(e)=>setFilterDate(Number(e.target.value))}>
-                    <option value={0}>Ascending date</option>
-                    <option value={1}>Descending date</option>
-                </select>
-                <button onClick={()=>handleFilter}>Filter</button>
-            </form>
-        </div>
-            {Object.entries(
-                data.reduce<Record<string, typeof data>>((acc, flight)=>{
-                    if(!acc[flight.flightId]){
-                        acc[flight.flightId] = [];
-                    }
-                    acc[flight.flightId].push(flight);
-                    return acc;
-                }, {})
-            ).map(([flightId, flights])=>(
-                <Card key={flightId} className="flight-group-card">
-                {flights.map((flight:any)=>(
-                        <Card
-                            key={flight.initialDepartureDate + flight.finalArrivalDate}
-                            onClick={()=>showModal(flight.segments)}
-                            className="flight-card"
-                        >
-                        <p>Initial departure date: {flight.initialDepartureDate}</p>
-                        <p>Final arrival date: {flight.finalArrivalDate}</p>
-                        <p>{flight.segments[0].initialCityName} ({flight.segments[0].initialAirlineCode}) - {flight.segments[0].arriveCityName} ({flight.segments[0].arriveAirlineCode})</p>
-                        <p>{flight.airlineName} ({flight.airlineCode})</p>
-                        <p>{flight.totalTime}</p>
-                        <p className="price">$ {flight.pricePerTraveler} {flight.currency} per traveler</p>
-                        <p className="price">$ {flight.totalPrice} {flight.currency} total</p>
-                        </Card>
-                    ))}
-                </Card>
-            ))}
+        
+        <div key={JSON.stringify(data)} style={{width:"90rem"}}>
+            
+            {data &&(
+            <div>
+                {Object.entries(
+                    data.reduce<Record<string, typeof data>>((acc, flight)=>{
+                        if(!acc[flight.flightId]){
+                            acc[flight.flightId] = [];
+                        }
+                        acc[flight.flightId].push(flight);
+                        return acc;
+                    }, {})
+                ).map(([flightId, flights], index)=>(
+
+                    <div>
+                    <Card key={`${flightId}-${index}-${Math.random()}`} className="flight-group-card">
+                    <h2>Flight option {index+1}</h2>
+                    {flights.map((flight:any, index:any)=>(
+                            <Card
+                                key={`${flight.flightId} + ${flight.finalArrivalDate} + ${Math.random()}`}
+                                onClick={()=>showModal(flight.segments)}
+                                className="flight-card"
+                            >
+                            {index == 0 ? <h4>Departure flight</h4> : <h4>Return flight</h4>}
+                            <p>Initial departure date: {flight.initialDepartureDate}&emsp;&emsp;&emsp;&emsp;&emsp;Final arrival date: {flight.finalArrivalDate}</p> 
+                            {/* <p>Final arrival date: {flight.finalArrivalDate}</p> */}
+                            <p>{flight.segments[0].initialCityName} ({flight.segments[0].initialAirlineCode}) - {flight.segments[0].arriveCityName} ({flight.segments[0].arriveAirlineCode})</p>
+                            <p>{flight.airlineName} ({flight.airlineCode})</p>
+                            <p>Duration: {flight.totalTime} H</p>    
+                            </Card>
+                        
+                        ))}
+                    <Card className="flight-card-results">
+                    <h4>Price per flight:</h4>
+                    <p className="price">$ {flights[0].pricePerTraveler} {flights[0].currency} per traveler</p>
+                    <p className="price">$ {flights[0].totalPrice} {flights[0].currency} total</p>
+                    </Card>
+                    </Card>
+                    </div>
+                ))}
+            </div>
+            )}
 
             <Modal title="Detailed flight information" open={isModalOpen} onCancel={handleCancel} className="modal">
             {currentCard && (
