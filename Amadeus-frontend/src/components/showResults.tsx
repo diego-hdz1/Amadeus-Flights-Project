@@ -1,6 +1,7 @@
-import { Card, Col, Row, Modal} from "antd";
+import { Card, Col, Row, Modal, Spin} from "antd";
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 interface ShowResultsProps{
     url:string;
@@ -17,6 +18,8 @@ const ShowResults: React.FC<ShowResultsProps> = ({
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentCard, setCurrentCard] = useState<any| null>(null);
     const [currency, setCurrency] = useState("");
+    const [loading, setLoading] = useState(true);
+    const navigator = useNavigate();
 
     const showModal = (segments:any) => {
         setCurrentCard(segments);
@@ -30,10 +33,21 @@ const ShowResults: React.FC<ShowResultsProps> = ({
 
     const fetchData = () => {
         axios.get(url).then((response)=>{
+        if(response.data.length===0){
+            console.log("Error");
+            navigator("/error");
+          }
+          setLoading(false);
+          setCurrency(response.data[0].currency);
           setData(response.data);
           console.log(data);
+
         }).catch(error =>{console.log(error);})
     }    
+
+    // useEffect(()=>{
+    //     setLoading(!loading);
+    // }, [data]);
 
     useEffect(()=>{
         if(location.pathname === "/showResult"){
@@ -42,7 +56,15 @@ const ShowResults: React.FC<ShowResultsProps> = ({
 
     return (
         
-        <div key={JSON.stringify(data)} style={{width:"90rem"}}>
+        <div>
+            {loading ? (
+                <div style={{textAlign:'center', marginTop:'80px', width:"90rem"}}>
+                    <Spin size="large"></Spin>
+                    <h2>Loading results...</h2>
+                </div>
+            ) : (
+
+            <div key={JSON.stringify(data)} style={{width:"90rem"}}>
             
             {data &&(
             <div>
@@ -78,6 +100,7 @@ const ShowResults: React.FC<ShowResultsProps> = ({
                     <h4>Price per flight:</h4>
                     <p className="price">$ {flights[0].pricePerTraveler} {flights[0].currency} per traveler</p>
                     <p className="price">$ {flights[0].totalPrice} {flights[0].currency} total</p>
+                    
                     </Card>
                     </Card>
                     </div>
@@ -90,10 +113,10 @@ const ShowResults: React.FC<ShowResultsProps> = ({
                 <div className="modal-content">
                     <Card className="price-breakdown">
                         <h2>Price breakdown</h2>
-                        <p>Base: {currentCard[0].flightDetails.base}</p>
-                        <p>Fees: {currentCard[0].flightDetails.fees}</p>
-                        <p>Per traveler</p>
-                        <p className="price-total">Total: {currentCard[0].flightDetails.total}</p>
+                        <p>Base: ${currentCard[0].flightDetails.base} - {currency}</p>
+                        <p>Fees: ${currentCard[0].flightDetails.fees} - {currency}</p>
+                        <p>Per traveler: $ Finish this {currency}</p>
+                        <p className="price-total">Total: ${currentCard[0].flightDetails.total} - {currency}</p>
                     </Card>
                     {currentCard.map((segment:any, index:number)=>(
                         <Card key={segment.flightId} className="segment-card">   
@@ -123,6 +146,9 @@ const ShowResults: React.FC<ShowResultsProps> = ({
             )}
             </Modal>   
         </div>
+        )}
+        </div>
+
     );
 };
 
