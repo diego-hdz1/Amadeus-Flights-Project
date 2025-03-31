@@ -32,6 +32,9 @@ public class Flight {
         this.segments = segments;
     }
 
+    public Flight() {
+    }
+
     @Override
     public String toString() {
         return "Flight{" +

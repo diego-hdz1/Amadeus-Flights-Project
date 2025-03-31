@@ -46,6 +46,6 @@ public class FlightController implements FlightApi{
     //TO DO: Add this functionality. Think about the first send
     @Override
     public ResponseEntity<List<Flight>> paginateFlights(Integer pageNumber) {
-        return null;
+        return new ResponseEntity<>(flightService.handlePagination(pageNumber, 6), HttpStatus.OK);
     }
 }

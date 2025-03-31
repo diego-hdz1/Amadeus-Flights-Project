@@ -38,5 +38,4 @@ public interface FlightApi {
             @RequestParam(required = true) Integer pageNumber
     );
 
-    //If time is good, I want to create an endpoint to handle pagination
 }

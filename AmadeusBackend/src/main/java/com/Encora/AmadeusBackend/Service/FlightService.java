@@ -17,4 +17,6 @@ public interface FlightService {
     String getCityName(String airportCode);
     List<Flight> sortFligths(Integer orderPrice, Integer orderDate);
     void validateData(String departureAirportCode, String arrivalAirportCode, String departureDate, String arrivalDate, Integer adults, Boolean nonStop, String currency);
+    List<Flight> handlePagination(Integer pagination, Integer pageSize);
+    List<Flight> paginateFlights(List<Flight> flights, Integer pagination, Integer pageSize);
 }

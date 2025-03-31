@@ -6,12 +6,10 @@ import com.Encora.AmadeusBackend.Model.FlightDetails;
 import com.Encora.AmadeusBackend.Model.Segments;
 import com.Encora.AmadeusBackend.Repo.FlightRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import javax.swing.text.Segment;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.*;
@@ -190,7 +188,7 @@ public class FlightServiceImpl implements FlightService{
             }
         }
         flightRepository.cachedList = flights;
-        return flights;
+        return paginateFlights(flights, 0, 6);
     }
 
     //Check for 429 Too Many Requests error, I think is because we call it in less than a minute
@@ -290,5 +288,26 @@ public class FlightServiceImpl implements FlightService{
             throw new ValidationException("Airport codes must be of length 3");
         }
 
+    }
+
+    @Override
+    public List<Flight> handlePagination(Integer pagination, Integer pageSize) {
+        return  paginateFlights(flightRepository.cachedList, pagination, pageSize);
+    }
+
+    @Override
+    public List<Flight> paginateFlights(List<Flight> flights, Integer pagination, Integer pageSize) {
+        int totalFlights = flights.size();
+        if (totalFlights < 6) return flights;
+
+        int lowerBound = pagination*pageSize;
+        int upperBound = (pagination+1)*pageSize;
+
+        if(totalFlights < upperBound){
+            upperBound = totalFlights;
+        }
+
+        flights = flights.subList(lowerBound, upperBound);
+        return flights;
     }
 }
