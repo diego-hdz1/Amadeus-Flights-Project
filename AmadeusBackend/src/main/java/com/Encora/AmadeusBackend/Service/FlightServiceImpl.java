@@ -13,6 +13,7 @@ import org.springframework.web.client.RestTemplate;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class FlightServiceImpl implements FlightService{
@@ -23,8 +24,11 @@ public class FlightServiceImpl implements FlightService{
 
     final String CLIENT_ID = System.getenv("MY_API_KEY");
     final String CLIENT_SECRET = System.getenv("MY_API_SECRET");
+    final int MAX_RETRIES = 5;
     Map<String, String> airlinesNames = new HashMap<>();
     Map<String, String> cityNames = new HashMap<>();
+
+    //TO DO: Inject the RestTemplate
 
     @Override
     public String getAccessToken(){
@@ -38,20 +42,41 @@ public class FlightServiceImpl implements FlightService{
     }
 
     @Override
-    public ResponseEntity<Map> createURL(String specificURL) {
+    public ResponseEntity<Map> getData(String specificURL) {
         String token = getAccessToken();
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization","Bearer " + token);
         headers.set("Content-Type", "application/json");
         HttpEntity<String> entity = new HttpEntity<>(headers);
-        ResponseEntity<Map> response = restTemplate.exchange(specificURL, HttpMethod.GET, entity, Map.class);
-        return response;
+
+        int retries = 0;
+        int waitTime = 1;
+        while (retries<MAX_RETRIES){
+            ResponseEntity<Map> response = restTemplate.exchange(specificURL, HttpMethod.GET, entity, Map.class);
+            if(response.getStatusCode() == HttpStatus.OK){
+                return response;
+            }
+            else if(response.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS){
+                try{
+                    System.out.println("Waiting for API response");
+                    TimeUnit.SECONDS.sleep(waitTime);
+                    waitTime *=2;
+                    retries += 1;
+                }catch(InterruptedException e){
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Retry error", e);
+                }
+            }else{
+                throw new RuntimeException("Error by consuming the API" + response.getStatusCode());
+            }
+        }
+        throw new RuntimeException("Maximum number of retries per request");
     }
 
     @Override
     public List<AirportCode> getCodes(String keywordToSearch) {
-        ResponseEntity<Map> response = createURL("https://test.api.amadeus.com/v1/reference-data/locations?subType=AIRPORT&keyword="+keywordToSearch+"&sort=analytics.travelers.score&view=LIGHT");
+        ResponseEntity<Map> response = getData("https://test.api.amadeus.com/v1/reference-data/locations?subType=AIRPORT&keyword="+keywordToSearch+"&sort=analytics.travelers.score&view=LIGHT");
         List<Map<String, Object>> codeData = (List<Map<String, Object>>) response.getBody().get("data");
         List<AirportCode> result = new ArrayList<>();
         for(Map<String, Object> code: codeData){
@@ -74,7 +99,8 @@ public class FlightServiceImpl implements FlightService{
                 }
                 builder.append("&adults=").append(adults).
                 append("&nonStop=").append(nonStop).append("&currencyCode=").append(currency).append("&max=150");
-        ResponseEntity<Map> response  = createURL(builder.toString());
+
+        ResponseEntity<Map> response  = getData(builder.toString());
         List<Map<String, Object>> flightData = (List<Map<String, Object>>) response.getBody().get("data");
         Map<String, Object> dictionaries = ((Map<String, Object>) response.getBody().get("dictionaries"));
 
@@ -84,13 +110,11 @@ public class FlightServiceImpl implements FlightService{
         for(Map<String, Object> flight: flightData){
             Integer flightId = Integer.valueOf((String) flight.get("id"));
 
-            //To check if we need to consider a returning date, in this case, returning segments
             int returningSements = 2;
             if(Objects.equals(arrivalDate, "none")){
                 returningSements = 1;
             }
 
-            //Perform cleaner code with this thing of itineraries
             Map<String, Object> checkItineraries = ((List<Map<String, Object>>) flight.get("itineraries")).get(0);
             List<Map<String, Object>> checkSegments = ((List<Map<String, Object>>) checkItineraries.get("segments"));
             Map<String, Object> check = (Map<String, Object>) checkSegments.get(0).get("departure");
@@ -104,7 +128,6 @@ public class FlightServiceImpl implements FlightService{
             Map<String, Object> dicAircrafts = ((Map<String, Object>) dictionaries.get("aircraft"));
             int segmentCount = 0;
 
-            //I will move this to the repository layer to a separate method
             for(int i=0; i<returningSements;i++){
                 List<Segments> totalSegments = new ArrayList<>();
                 Map<String, Object> itineraries = ((List<Map<String, Object>>) flight.get("itineraries")).get(i);
@@ -128,15 +151,13 @@ public class FlightServiceImpl implements FlightService{
                     else carrierCode = (String) operating.get("carrierCode");
 
                     Map<String, Object> aircraft = (Map<String, Object>) segment.get("aircraft");
-                    //Maybe put the name of the Airline with the airline code here as well
                     String preCode = (String) aircraft.get("code") ;
                     String aircraftCode = (String) dicAircrafts.get(preCode);
-                    String totalDuration = (String) segment.get("duration");
+                    String durationSegment = (String) segment.get("duration");
+                    String totalDuration = durationSegment.substring(2);
 
-                    //Get total, fees and base
                     Map<String, Object> flightDetails = (Map<String, Object>) flight.get("price");
                     String total = (String) flightDetails.get("total");
-
 
                     List<Map<String, Object>> totalFees = ((List<Map<String, Object>>) flightDetails.get("fees"));
                     String fees = (String)totalFees.get(0).get("amount") + " " + (String)totalFees.get(0).get("type");
@@ -175,7 +196,7 @@ public class FlightServiceImpl implements FlightService{
                 String totalTime = (String) checkTotalTime.get("duration");
 
                 Duration duration = Duration.parse(totalTime);
-                LocalTime time = LocalTime.MIDNIGHT.plus(duration); //TO DO: Check the midnight
+                LocalTime time = LocalTime.MIDNIGHT.plus(duration);
 
                 Map<String, Object> price = (Map<String, Object>) flight.get("price");
 
@@ -191,14 +212,13 @@ public class FlightServiceImpl implements FlightService{
         return paginateFlights(flights, 0, 6);
     }
 
-    //Check for 429 Too Many Requests error, I think is because we call it in less than a minute
     @Override
     public String getAirportName(String airportCode) {
         if(!airlinesNames.containsKey(airportCode)){
             StringBuilder builder = new StringBuilder("https://test.api.amadeus.com/v1/reference-data/airlines?airlineCodes=");
             System.out.println(airportCode);
             builder.append(airportCode);
-            ResponseEntity<Map> response  = createURL(builder.toString());
+            ResponseEntity<Map> response  = getData(builder.toString());
             List<Map<String, Object>> codeData = (List<Map<String, Object>>) response.getBody().get("data");
             if(codeData.isEmpty()){
                 airlinesNames.put(airportCode, ""); //To prevent the 429 too many requests when some code its not in the API
@@ -217,7 +237,7 @@ public class FlightServiceImpl implements FlightService{
             System.out.println(airportCode);
             StringBuilder builder = new StringBuilder("https://test.api.amadeus.com/v1/reference-data/locations?subType=CITY,AIRPORT&keyword="+airportCode);
             builder.append(airportCode);
-            ResponseEntity<Map> response  = createURL(builder.toString());
+            ResponseEntity<Map> response  = getData(builder.toString());
             List<Map<String, Object>> codeData = (List<Map<String, Object>>) response.getBody().get("data");
             if(codeData.isEmpty()){
                 cityNames.put(airportCode, ""); //To prevent the 429 too many requests when some code its not in the API
@@ -234,7 +254,7 @@ public class FlightServiceImpl implements FlightService{
     public List<Flight> sortFligths(Integer orderPrice, Integer orderDate) {
         List<Flight> cachedList = flightRepository.cachedList;
 
-        if(orderPrice == 1 && orderDate == 1) return cachedList;
+        if(orderPrice == 1 && orderDate == 1) return paginateFlights(cachedList, 0, 6);
         if(orderPrice == 3 && orderDate ==1) {cachedList.sort(Comparator.comparingDouble(Flight::getTotalPrice));}
         else if(orderPrice ==2 && orderDate == 1) {cachedList.sort(Comparator.comparingDouble(Flight::getTotalPrice).reversed());}
         else if(orderPrice == 1 && orderDate == 3) {cachedList.sort(Comparator.comparing(Flight::getTotalTime, Comparator.nullsLast(LocalTime::compareTo)));}
@@ -253,15 +273,7 @@ public class FlightServiceImpl implements FlightService{
                     .thenComparing(Flight::getTotalTime, Comparator.nullsLast(LocalTime::compareTo).reversed()));
         }
         flightRepository.cachedList = cachedList;
-//        FlightDetails flightDetails = new FlightDetails("-1", "-1", "1");
-//        List<Map<String,Boolean>> amenities =  new ArrayList<Map<String, Boolean>>();
-//        Segments segment = new Segments("-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1", "-1",amenities, "-1", "-1", flightDetails);
-//        List<Segments> segments = new ArrayList<>(Arrays.asList(segment, segment));
-//        Flight mockFlight = new Flight(-1, "-1", "-1", "-1", "-1", LocalTime.of(10,0), 1F, 1F, "-1", segments);
-//        System.out.println(mockFlight);
-//        cachedList.add(mockFlight);
-        int size = cachedList.size();
-        return cachedList.subList(0, 10);
+        return paginateFlights(cachedList, 0, 6);
     }
 
     @Override
@@ -287,12 +299,11 @@ public class FlightServiceImpl implements FlightService{
         if(departureAirportCode.length() != 3 || arrivalAirportCode.length() !=3){
             throw new ValidationException("Airport codes must be of length 3");
         }
-
     }
 
     @Override
     public List<Flight> handlePagination(Integer pagination, Integer pageSize) {
-        return  paginateFlights(flightRepository.cachedList, pagination, pageSize);
+        return paginateFlights(flightRepository.cachedList, pagination, pageSize);
     }
 
     @Override

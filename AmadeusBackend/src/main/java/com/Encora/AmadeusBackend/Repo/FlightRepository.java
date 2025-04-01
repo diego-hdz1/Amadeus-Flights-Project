@@ -11,6 +11,7 @@ import java.util.Map;
 @Repository
 public class FlightRepository implements FlightRepositoryInterface {
     private static final Map<String, String> airport = new HashMap<>();
+    private static final Map<String, String> cities = new HashMap<>();
     public List<Flight> cachedList = new ArrayList<>();
 
     static {

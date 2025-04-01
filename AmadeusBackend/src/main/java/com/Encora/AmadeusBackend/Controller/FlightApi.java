@@ -10,7 +10,6 @@ import java.util.List;
 
 public interface FlightApi {
 
-
     @GetMapping("/codes")
     ResponseEntity<List<AirportCode>> getCodes(
             @RequestParam(required = false) String keyword

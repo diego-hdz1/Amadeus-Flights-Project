@@ -10,8 +10,6 @@ public class Segments {
     private String arriveCityName;
     private String initialAirlineCode;
     private String arriveAirlineCode;
-
-    //Maybe this should be in the details
     private String carrierCode;
     private String aircraft;
     private String totalDuration;

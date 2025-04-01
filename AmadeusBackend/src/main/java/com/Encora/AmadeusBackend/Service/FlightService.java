@@ -10,7 +10,7 @@ import java.util.Map;
 public interface FlightService {
 
     String getAccessToken();
-    ResponseEntity<Map> createURL(String specificURL);
+    ResponseEntity<Map> getData(String specificURL);
     List<AirportCode> getCodes(String keyword);
     List<Flight> getFlights(String departureAirportCode, String arrivalAirportCode, String departureDate, String arrivalDate, Integer adults, Boolean nonStop, String currency);
     String getAirportName(String airportCode);

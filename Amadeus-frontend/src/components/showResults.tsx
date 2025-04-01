@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom";
 interface ShowResultsProps{
     url:string;
     data: any[];
-    //setData: React.Dispatch<React.SetStateAction<any[]>>;
     setData: (data:any) => void;
 }
 
@@ -19,10 +18,12 @@ const ShowResults: React.FC<ShowResultsProps> = ({
     const [currentCard, setCurrentCard] = useState<any| null>(null);
     const [currency, setCurrency] = useState("");
     const [loading, setLoading] = useState(true);
+    const [currentPriceSegegment, setCurrentPriceSegment] = useState(0);
     const navigator = useNavigate();
 
-    const showModal = (segments:any) => {
+    const showModal = (segments:any, totalPrice:any) => {
         setCurrentCard(segments);
+        setCurrentPriceSegment(totalPrice);
         setIsModalOpen(true);
       };
 
@@ -44,10 +45,6 @@ const ShowResults: React.FC<ShowResultsProps> = ({
 
         }).catch(error =>{console.log(error);})
     }    
-
-    useEffect(()=>{
-        console.log("En el use effect de data", data);
-    }, [data]);
 
     useEffect(()=>{
         if(location.pathname === "/showResult"){
@@ -85,7 +82,7 @@ const ShowResults: React.FC<ShowResultsProps> = ({
                             {flights.map((flight:any, index:any)=>(
                                  <Card
                                  key={`${flight.flightId}+${flight.finalArrivalDate}+${Math.random()}`}
-                                 onClick={()=>showModal(flight.segments)}
+                                 onClick={()=>showModal(flight.segments, flight.pricePerTraveler)}
                                  className="flight-card"
                                 >
                                 {index == 0 ? <h4>Departure flight</h4> : <h4>Return flight</h4>}
@@ -93,7 +90,7 @@ const ShowResults: React.FC<ShowResultsProps> = ({
                                 {/* <p>Final arrival date: {flight.finalArrivalDate}</p> */}
                                 <p>{flight.segments[0].initialCityName} ({flight.segments[0].initialAirlineCode}) - {flight.segments[0].arriveCityName} ({flight.segments[0].arriveAirlineCode})</p>
                                 <p>{flight.airlineName} ({flight.airlineCode})</p>
-                                <p>Duration: {flight.totalTime} H</p>    
+                                <p>Total duration: {flight.totalTime} H</p>    
                                 </Card>
                             ))}
                         <Card className="flight-card-results">
@@ -112,10 +109,10 @@ const ShowResults: React.FC<ShowResultsProps> = ({
                 <div className="modal-content">
                     <Card className="price-breakdown">
                         <h2>Price breakdown</h2>
-                        <p>Base: ${currentCard[0].flightDetails.base} - {currency}</p>
-                        <p>Fees: ${currentCard[0].flightDetails.fees} - {currency}</p>
-                        <p>Per traveler: $ Finish this {currency}</p>
-                        <p className="price-total">Total: ${currentCard[0].flightDetails.total} - {currency}</p>
+                        <p>Base: ${currentCard[0].flightDetails.base} {currency}</p>
+                        <p>Fees: ${currentCard[0].flightDetails.fees} {currency}</p>
+                        <p>Per traveler: $ {currentPriceSegegment} {currency}</p>
+                        <p className="price-total">Total: ${currentCard[0].flightDetails.total} {currency}</p>
                     </Card>
                     {currentCard.map((segment:any, index:number)=>(
                         <Card key={segment.flightId} className="segment-card">   
@@ -123,7 +120,7 @@ const ShowResults: React.FC<ShowResultsProps> = ({
                         <p>{segment.initialDepartureDate} - {segment.finalArrivalDate}</p>
                         <p>{segment.initialCityName} ({segment.initialAirlineCode}) - {segment.arriveCityName} ({segment.arriveAirlineCode})</p>
                         <p>({segment.carrierCode}) {segment.aircraft}</p>
-                        <p>{segment.totalDuration}</p>
+                        <p>Total duration: {segment.totalDuration}</p>
                         <Card className="travel-details">
                             <h3>Details per travel</h3>
                             <p>Class: {segment.classNumber}</p>

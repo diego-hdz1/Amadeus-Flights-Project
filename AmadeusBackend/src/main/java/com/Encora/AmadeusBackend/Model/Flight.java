@@ -10,9 +10,6 @@ public class Flight {
     private String finalArrivalDate;
     private String airlineName;
     private String airlineCode;
-    //The name and code of the operating airline (only if different from the main airline)
-
-    //the total time of the flight from departure to arrival. This should include the flight time, layover time of all segments (if there are any)
     private LocalTime totalTime;
     private Float totalPrice;
     private Float pricePerTraveler;

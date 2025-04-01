@@ -43,7 +43,6 @@ public class FlightController implements FlightApi{
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.getMessage());
     }
 
-    //TO DO: Add this functionality. Think about the first send
     @Override
     public ResponseEntity<List<Flight>> paginateFlights(Integer pageNumber) {
         return new ResponseEntity<>(flightService.handlePagination(pageNumber, 6), HttpStatus.OK);
