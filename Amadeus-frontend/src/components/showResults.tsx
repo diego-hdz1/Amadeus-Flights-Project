@@ -45,13 +45,15 @@ const ShowResults: React.FC<ShowResultsProps> = ({
         }).catch(error =>{console.log(error);})
     }    
 
-    // useEffect(()=>{
-    //     setLoading(!loading);
-    // }, [data]);
+    useEffect(()=>{
+        console.log("En el use effect de data", data);
+    }, [data]);
 
     useEffect(()=>{
         if(location.pathname === "/showResult"){
-        fetchData();}
+        fetchData();
+        console.log("Dentro del fetch data");
+    }
     }, [location]);
 
     return (
@@ -68,41 +70,38 @@ const ShowResults: React.FC<ShowResultsProps> = ({
             
             {data &&(
             <div>
-                {Object.entries(
-                    data.reduce<Record<string, typeof data>>((acc, flight)=>{
-                        if(!acc[flight.flightId]){
-                            acc[flight.flightId] = [];
+                {Array.from(
+                    data.reduce<Map<String, typeof data>>((acc,flight) =>{
+                        if(!acc.has(flight.flightId)){
+                            acc.set(flight.flightId, []);
                         }
-                        acc[flight.flightId].push(flight);
+                        acc.get(flight.flightId)!.push(flight);
                         return acc;
-                    }, {})
-                ).map(([flightId, flights], index)=>(
-
-                    <div>
-                    <Card key={`${flightId}-${index}-${Math.random()}`} className="flight-group-card">
-                    <h2>Flight option {index+1}</h2>
-                    {flights.map((flight:any, index:any)=>(
-                            <Card
-                                key={`${flight.flightId} + ${flight.finalArrivalDate} + ${Math.random()}`}
-                                onClick={()=>showModal(flight.segments)}
-                                className="flight-card"
-                            >
-                            {index == 0 ? <h4>Departure flight</h4> : <h4>Return flight</h4>}
-                            <p>Initial departure date: {flight.initialDepartureDate}&emsp;&emsp;&emsp;&emsp;&emsp;Final arrival date: {flight.finalArrivalDate}</p> 
-                            {/* <p>Final arrival date: {flight.finalArrivalDate}</p> */}
-                            <p>{flight.segments[0].initialCityName} ({flight.segments[0].initialAirlineCode}) - {flight.segments[0].arriveCityName} ({flight.segments[0].arriveAirlineCode})</p>
-                            <p>{flight.airlineName} ({flight.airlineCode})</p>
-                            <p>Duration: {flight.totalTime} H</p>    
-                            </Card>
-                        
-                        ))}
-                    <Card className="flight-card-results">
-                    <h4>Price per flight:</h4>
-                    <p className="price">$ {flights[0].pricePerTraveler} {flights[0].currency} per traveler</p>
-                    <p className="price">$ {flights[0].totalPrice} {flights[0].currency} total</p>
-                    
-                    </Card>
-                    </Card>
+                    }, new Map())
+                ).map(([flightId, flights], index) =>(
+                    <div key={`${flightId}-${index}`}>
+                        <Card className="flight-group-card">
+                            <h2>Flight option {index+1}</h2>
+                            {flights.map((flight:any, index:any)=>(
+                                 <Card
+                                 key={`${flight.flightId}+${flight.finalArrivalDate}+${Math.random()}`}
+                                 onClick={()=>showModal(flight.segments)}
+                                 className="flight-card"
+                                >
+                                {index == 0 ? <h4>Departure flight</h4> : <h4>Return flight</h4>}
+                                <p>Initial departure date: {flight.initialDepartureDate}&emsp;&emsp;&emsp;&emsp;&emsp;Final arrival date: {flight.finalArrivalDate}</p> 
+                                {/* <p>Final arrival date: {flight.finalArrivalDate}</p> */}
+                                <p>{flight.segments[0].initialCityName} ({flight.segments[0].initialAirlineCode}) - {flight.segments[0].arriveCityName} ({flight.segments[0].arriveAirlineCode})</p>
+                                <p>{flight.airlineName} ({flight.airlineCode})</p>
+                                <p>Duration: {flight.totalTime} H</p>    
+                                </Card>
+                            ))}
+                        <Card className="flight-card-results">
+                            <h4>Price per flight:</h4>
+                            <p className="price">$ {flights[0].pricePerTraveler} {flights[0].currency} per traveler</p>
+                            <p className="price">$ {flights[0].totalPrice} {flights[0].currency} total</p>       
+                        </Card>
+                        </Card>
                     </div>
                 ))}
             </div>

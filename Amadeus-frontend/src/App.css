@@ -28,6 +28,21 @@ h1{
   color: rgba(241, 233, 233, 0.909);
 }
 
+.add-form select, 
+.add-form label
+.add-form button{
+  background-color: rgb(241, 233, 233);
+  color: #5a3e2b;
+  font-family: inherit;
+  border: none;
+  border-radius: 10rem;
+  padding: 1.2rem 3.2rem;
+  font-weight: 700;
+  font-size: 1.2rem;
+  cursor: pointer;
+  border: 1.2px solid #031d38;
+}
+
 .show-card{
   background-color: #fafafa;
   transition: transform 0.2s;

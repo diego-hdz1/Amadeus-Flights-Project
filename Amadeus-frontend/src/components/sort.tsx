@@ -22,26 +22,18 @@ const Sort: React.FC<ShowSortProps> = ({
         console.log("Updated data", JSON.stringify(data,null,2));
     }, [data]);
 
-    const empyState = () =>{
-        setData([]);
-        console.log("Entro en el empty state");
-    }
-
-    const newState = (allData:any) =>{
-        setData(allData);
-        console.log("Entro en el set state");
-
-    }
-
     const handleFilter = (e: React.MouseEvent<HTMLButtonElement>) =>{
         e.preventDefault();
-        //`http://localhost:8080/sort?orderPrice=${filterPrice}&orderDate=${filterDate}`
-        axios.get(`http://localhost:8080/sort?orderPrice=2&orderDate=1`).then((response)=>{
+        axios.get(`http://localhost:8080/sort?orderPrice=${filterPrice}&orderDate=${filterDate}`).then((response)=>{
             //const newData = response.data.map((flight:any) => ({...flight}))
-            const newData = JSON.parse(JSON.stringify(response.data));
+            
+            // const newData = JSON.parse(JSON.stringify(response.data));
+            // console.log("Data in JSON from soting", newData);
             //empyState();
             //newState(newData);
-            setData(newData);
+            //setData(newData);
+            // console.log(response.data);
+            setData([...response.data]);
         }).catch(error =>{console.log(error);})
     }
 
@@ -54,12 +46,14 @@ const Sort: React.FC<ShowSortProps> = ({
             <form className="add-form">
                 <h3>Choose your options to filter</h3>
                 <select value={filterPrice} onChange={(e)=>setFilterPrice(Number(e.target.value))}>
-                    <option value={1}>Ascending price</option>
+                    <option value={1}>-</option>
                     <option value={2}>Descending price</option>
+                    <option value={3}>Ascending price</option>
                 </select>
                 <select value={filterDate} onChange={(e)=>setFilterDate(Number(e.target.value))}>
-                    <option value={0}>Ascending date</option>
-                    <option value={1}>Descending date</option>
+                    <option value={1}>-</option>
+                    <option value={2}>Descending date</option>
+                    <option value={3}>Ascending date</option>
                 </select>
                 <button type="button" onClick={handleFilter}>Filter</button>
             </form>
