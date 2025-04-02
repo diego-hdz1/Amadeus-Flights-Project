@@ -18,26 +18,29 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class FlightServiceImpl implements FlightService{
 
-    //TO DO: Change this autowired as Mirna said
-    @Autowired
     FlightRepository flightRepository;
+    RestTemplate restTemplate;
+
+    @Autowired
+    public FlightServiceImpl(FlightRepository flightRepository, RestTemplate restTemplate){
+        this.flightRepository = flightRepository;
+        this.restTemplate = restTemplate;
+    }
 
     final String CLIENT_ID = System.getenv("MY_API_KEY");
     final String CLIENT_SECRET = System.getenv("MY_API_SECRET");
     final int MAX_RETRIES = 5;
+    final String BASE_URL = "https://test.api.amadeus.com/";
     Map<String, String> airlinesNames = new HashMap<>();
     Map<String, String> cityNames = new HashMap<>();
 
-    //TO DO: Inject the RestTemplate
-
     @Override
     public String getAccessToken(){
-        RestTemplate restTemplate = new RestTemplate();
         String requestBody = "grant_type=client_credentials" + "&client_id=" + CLIENT_ID + "&client_secret=" + CLIENT_SECRET;
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
-        ResponseEntity<Map> response = restTemplate.exchange("https://test.api.amadeus.com/v1/security/oauth2/token", HttpMethod.POST, request, Map.class);
+        ResponseEntity<Map> response = restTemplate.exchange(BASE_URL+"v1/security/oauth2/token", HttpMethod.POST, request, Map.class);
         return (String) response.getBody().get("access_token");
     }
 
@@ -76,7 +79,7 @@ public class FlightServiceImpl implements FlightService{
 
     @Override
     public List<AirportCode> getCodes(String keywordToSearch) {
-        ResponseEntity<Map> response = getData("https://test.api.amadeus.com/v1/reference-data/locations?subType=AIRPORT&keyword="+keywordToSearch+"&sort=analytics.travelers.score&view=LIGHT");
+        ResponseEntity<Map> response = getData(BASE_URL+"v1/reference-data/locations?subType=AIRPORT&keyword="+keywordToSearch+"&sort=analytics.travelers.score&view=LIGHT");
         List<Map<String, Object>> codeData = (List<Map<String, Object>>) response.getBody().get("data");
         List<AirportCode> result = new ArrayList<>();
         for(Map<String, Object> code: codeData){
@@ -91,7 +94,7 @@ public class FlightServiceImpl implements FlightService{
     @Override
     public List<Flight> getFlights(String departureAirportCode, String arrivalAirportCode, String departureDate, String arrivalDate, Integer adults, Boolean nonStop, String currency) {
         validateData(departureAirportCode, arrivalAirportCode, departureDate, arrivalDate, adults, nonStop, currency);
-        StringBuilder builder = new StringBuilder("https://test.api.amadeus.com/v2/shopping/flight-offers?");
+        StringBuilder builder = new StringBuilder(BASE_URL+"v2/shopping/flight-offers?");
         builder.append("originLocationCode=").append(departureAirportCode).append("&destinationLocationCode=").append(arrivalAirportCode).
                 append("&departureDate=").append(departureDate);
                 if(!Objects.equals(arrivalDate, "none")){ //returnDate is optional
@@ -215,7 +218,7 @@ public class FlightServiceImpl implements FlightService{
     @Override
     public String getAirportName(String airportCode) {
         if(!airlinesNames.containsKey(airportCode)){
-            StringBuilder builder = new StringBuilder("https://test.api.amadeus.com/v1/reference-data/airlines?airlineCodes=");
+            StringBuilder builder = new StringBuilder(BASE_URL+"v1/reference-data/airlines?airlineCodes=");
             System.out.println(airportCode);
             builder.append(airportCode);
             ResponseEntity<Map> response  = getData(builder.toString());
@@ -235,7 +238,7 @@ public class FlightServiceImpl implements FlightService{
         if(!Objects.equals(cityFromRepo, "")) return cityFromRepo;
         if(!cityNames.containsKey(airportCode)){
             System.out.println(airportCode);
-            StringBuilder builder = new StringBuilder("https://test.api.amadeus.com/v1/reference-data/locations?subType=CITY,AIRPORT&keyword="+airportCode);
+            StringBuilder builder = new StringBuilder(BASE_URL+"v1/reference-data/locations?subType=CITY,AIRPORT&keyword="+airportCode);
             builder.append(airportCode);
             ResponseEntity<Map> response  = getData(builder.toString());
             List<Map<String, Object>> codeData = (List<Map<String, Object>>) response.getBody().get("data");
@@ -310,7 +313,6 @@ public class FlightServiceImpl implements FlightService{
     public List<Flight> paginateFlights(List<Flight> flights, Integer pagination, Integer pageSize) {
         int totalFlights = flights.size();
         if (totalFlights < 6) return flights;
-
         int lowerBound = pagination*pageSize;
         int upperBound = (pagination+1)*pageSize;
 

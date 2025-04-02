@@ -2,6 +2,7 @@ package com.Encora.AmadeusBackend.Controller;
 
 import com.Encora.AmadeusBackend.Model.AirportCode;
 import com.Encora.AmadeusBackend.Model.Flight;
+import com.Encora.AmadeusBackend.Repo.FlightRepository;
 import com.Encora.AmadeusBackend.Service.FlightServiceImpl;
 import com.Encora.AmadeusBackend.Service.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +25,9 @@ public class AmadeusControllerTest {
 
     @Mock
     private FlightServiceImpl flightService;
+
+    @Mock
+    private FlightRepository flightRepository;
 
     @InjectMocks
     private FlightController flightController;
@@ -82,5 +86,18 @@ public class AmadeusControllerTest {
         assertEquals(error, response.getBody());
     }
 
+    @Test
+    void testPaginateFlights(){
+        Integer page = 0;
+
+        List<Flight> flights = Arrays.asList(new Flight(), new Flight(),new Flight(), new Flight(),new Flight(), new Flight());
+        when(flightService.handlePagination(page, 6)).thenReturn(flights);
+
+        flightRepository.cachedList = flights;
+        ResponseEntity<List<Flight>> response = flightController.paginateFlights(page);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(flights.subList(0,6), response.getBody());
+    }
 
 }

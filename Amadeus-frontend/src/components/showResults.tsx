@@ -1,4 +1,4 @@
-import { Card, Col, Row, Modal, Spin} from "antd";
+import { Card, Modal, Spin} from "antd";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";

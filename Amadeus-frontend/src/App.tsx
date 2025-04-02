@@ -1,5 +1,5 @@
 import './App.css'
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ShowResults from './components/showResults'
 import Search from './components/search'
 import Header from './components/header'

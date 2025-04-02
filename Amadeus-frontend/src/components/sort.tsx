@@ -1,6 +1,8 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {PORT, SERVER} from '../constants';
+
 
 interface ShowSortProps{
     data: any[];
@@ -18,7 +20,7 @@ const Sort: React.FC<ShowSortProps> = ({
 
     const handleFilter = (e: React.MouseEvent<HTMLButtonElement>) =>{
         e.preventDefault();
-        axios.get(`http://localhost:8080/sort?orderPrice=${filterPrice}&orderDate=${filterDate}`).then((response)=>{
+        axios.get(`http://${SERVER}:${PORT}/sort?orderPrice=${filterPrice}&orderDate=${filterDate}`).then((response)=>{
             setData([...response.data]);
         }).catch(error =>{console.log(error);})
     }

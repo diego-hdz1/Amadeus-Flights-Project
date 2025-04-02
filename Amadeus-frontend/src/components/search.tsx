@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import type { FormProps, CheckboxProps } from 'antd';
+import type { FormProps } from 'antd';
 import { Button, Checkbox, Form, Input, DatePicker, Select, Card, Space, AutoComplete, Modal } from 'antd';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-import {PORT} from '../constants';
+import {PORT, SERVER} from '../constants';
 import { useNavigate } from 'react-router-dom';
 import axios from "axios";
 
@@ -49,7 +49,7 @@ const Search: React.FC<SearchProps> = ({
     const nonStop = values.nonStop;
     const currency = values.currency.value;
   
-    let url = `http://localhost:${PORT}/flights?departureAirportCode=${departureAirport}&arrivalAirportCode=${arrivalAirport}&departureDate=${departureDate}&returnDate=${returnDate}&adults=${adults}&nonStop=${nonStop}&currencyCode=${currency}`;
+    let url = `http://${SERVER}:${PORT}/flights?departureAirportCode=${departureAirport}&arrivalAirportCode=${arrivalAirport}&departureDate=${departureDate}&returnDate=${returnDate}&adults=${adults}&nonStop=${nonStop}&currencyCode=${currency}`;
     handleSetUrl(url);
     navigator('/showResult');
   };
@@ -79,9 +79,9 @@ const Search: React.FC<SearchProps> = ({
 
   const fetchAirports = async (keyword:string) => {
     setLoading(true);
-    if(!(/^[A-Za-z]+$/.test(keyword))) return; //Check if it has special characters
+    if(!(/^[A-Za-z]+$/.test(keyword))) return; //To check if it has special characters
     let data:any = [];
-    await axios.get(`http://localhost:${PORT}/codes?keyword=${keyword}`).then((response)=>{
+    await axios.get(`http://${SERVER}:${PORT}/codes?keyword=${keyword}`).then((response)=>{
       data = response.data;
     }).catch(error =>{console.log(error);})
     setOptions(

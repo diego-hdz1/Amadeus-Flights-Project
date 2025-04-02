@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from "axios";
-import {PORT} from '../constants';
+import {PORT, SERVER} from '../constants';
 
 interface PaginationControllProps{
     handleData: (data: any) => void;
@@ -12,7 +12,7 @@ interface PaginationControllProps{
     const [pagination, setPagination] = useState(0);
     
     useEffect(()=>{
-        let url = `http://localhost:${PORT}/paginate?pageNumber=${pagination}`;
+        let url = `http://${SERVER}:${PORT}/paginate?pageNumber=${pagination}`;
         axios.get(url).then((response)=>{
             handleData(response.data);
         }).catch(error =>{console.log(error);})

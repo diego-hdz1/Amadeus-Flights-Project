@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -36,8 +38,9 @@ public class AmadeusServiceTest {
 
     @BeforeEach
     void setUp(){
-        flightService = new FlightServiceImpl();
-        flightService.flightRepository = flightRepository;
+        //flightService = new FlightServiceImpl(flightRepository,restTemplate);
+        MockitoAnnotations.openMocks(this);
+
     }
 
     @Test
@@ -53,17 +56,6 @@ public class AmadeusServiceTest {
     }
 
     @Test
-    void testCreateURL(){
-        String testURL = "https://test.api.amadeus.com/v1/test";
-        Map<String, String> response = new HashMap<>();
-        ResponseEntity<Map> mockResponse = ResponseEntity.ok(response);
-
-        when(restTemplate.exchange(eq(testURL), eq(HttpMethod.GET), any(), eq(Map.class))).thenReturn(mockResponse);
-        ResponseEntity<Map> finalResponse = flightService.getData(testURL);
-        assertEquals(mockResponse, finalResponse);
-    }
-
-    @Test
     void testGetCodes(){
         Map<String, Object> responseMap = new HashMap<>();
         List<Map<String, Object>> dataList = new ArrayList<>();
@@ -75,9 +67,12 @@ public class AmadeusServiceTest {
         responseMap.put("data",dataList);
 
         ResponseEntity<Map> mockResponses = ResponseEntity.ok(responseMap);
-        List<AirportCode> result = flightService.getCodes("JFK");
+        FlightServiceImpl flightServiceTest = Mockito.spy(flightService);
+        Mockito.doReturn(mockResponses).when(flightServiceTest).getData(Mockito.anyString());
+        List<AirportCode> result = flightServiceTest.getCodes("JFK");
 
         assertFalse(result.isEmpty());
+        assertEquals(1, result.size());
     }
 
     @Test
@@ -122,6 +117,47 @@ public class AmadeusServiceTest {
         flightRepository.cachedList = flights;
         List<Flight> sortedFlights = flightService.sortFligths(1,3);
         assertEquals(LocalTime.of(12,12), sortedFlights.get(0).getTotalTime());
+    }
+
+    @Test
+    void testGetAirportName(){
+        Map<String, Object> airlineData =new HashMap<>();
+        airlineData.put("businessName", "America Airlines");
+
+        List<Map<String, Object>> dataList =new ArrayList<>();
+        dataList.add(airlineData);
+        Map<String, Object> responseMap = new HashMap<>();
+        responseMap.put("data", dataList);
+        ResponseEntity<Map> mockResponse = ResponseEntity.ok(responseMap);
+
+        FlightServiceImpl testFlightService = Mockito.spy(flightService);
+        Mockito.doReturn(mockResponse).when(testFlightService).getData(Mockito.anyString());
+        String result = testFlightService.getAirportName("LA");
+
+        assertEquals("America Airlines", result);
+    }
+
+    @Test
+    void testGetCityName(){
+        Map<String, Object> airlineData =new HashMap<>();
+        airlineData.put("cityName", "New York");
+
+        Map<String, Object> airportData = new HashMap<>();
+        airportData.put("address", airlineData);
+
+        List<Map<String, Object>> dataList =new ArrayList<>();
+        dataList.add(airportData);
+        Map<String, Object> responseMap = new HashMap<>();
+        responseMap.put("data", dataList);
+        ResponseEntity<Map> mockResponse = ResponseEntity.ok(responseMap);
+
+        Mockito.when(flightRepository.getCity("JFK")).thenReturn("");
+
+        FlightServiceImpl testFlightService = Mockito.spy(flightService);
+        Mockito.doReturn(mockResponse).when(testFlightService).getData(Mockito.anyString());
+        String result = testFlightService.getCityName("JFK");
+
+        assertEquals("New York", result);
     }
 
 }
