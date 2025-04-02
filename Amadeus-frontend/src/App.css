@@ -1,42 +1,194 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+body{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+h1{
+  text-align: center;
+  background-color: #203939;
+  font-family: 'Cambria';
+  font-weight: bold;
+  font-size: 4rem;
+  text-transform: uppercase;
+  word-spacing: 35px;
+  letter-spacing: 1px;
+  padding: 0.25em;
+  color: rgba(241, 233, 233, 0.974);
+}
+
+.add-form{
+  background-color: #4b7674;
+  padding: 2.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  color: white;
+  color: rgba(241, 233, 233, 0.909);
+}
+
+.add-form select, 
+.add-form label
+.add-form button{
+  background-color: rgb(241, 233, 233);
+  color: #5a3e2b;
+  font-family: inherit;
+  border: none;
+  border-radius: 10rem;
+  padding: 1.2rem 3.2rem;
+  font-weight: 700;
+  font-size: 1.2rem;
+  cursor: pointer;
+  border: 1.2px solid #031d38;
+}
+
+.show-card{
+  background-color: #fafafa;
+  transition: transform 0.2s;
+  padding: 10px;
+  margin-top: 10px;
+  width: 90em;
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.card-elemnts{
+  width: 10em;
+  height: 10em;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.container{
+  font-family: 'Arial', sans-serif;
+  background-color: #f4f6f9;
+  padding: 20px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.return-button{
+  background-color: #1890ff;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  align-self: center;
 }
 
-.card {
-  padding: 2em;
+.return-button:hover{
+  background-color: #40a9ff;
 }
 
-.read-the-docs {
-  color: #888;
+.sorting-text{
+  font-size: 16px;
+  font-weight: bold;
+  color: #444;
+  margin-bottom: 10px;
+}
+
+
+.flight-group-card{
+  border-radius: 10px;
+  background-color: #ffffff;
+  border: 1px solid #e8e8e8;
+  box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+  padding: 25px;
+  margin-bottom: 2.5em;
+}
+
+.flight-card{
+  background-color: #ebebeb;
+  border-left: 5px solid #1890ff;
+  transition: transform 0.2s;
+  padding: 10px;
+  margin-top: 10px;
+  font-size: 1em;
+}
+
+.flight-card-results{
+  background-color: #ebebeb;
+  border-left: 5px solid #6221e2;
+  transition: transform 0.2s;
+  padding: 10px;
+  margin-top: 10px;
+  font-size: 1em;
+}
+
+.flight-card:hover{
+  transform: scale(1.02);
+}
+
+h2{
+  font-size: 18px;
+  color: #333;
+}
+
+p:last-child{
+  font-weight: bold;
+  font-size: 16px;
+  color: #1890ff;
+}
+
+.modal .ant-modal-content{
+  border-radius: 10px;
+  padding: 20px;
+  background-color: white;
+}
+
+.ant-modal-title{
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+}
+
+.modal-content{
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.price-breakdown{
+  background-color: #f4f6f9;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.price-total{
+  font-size: 18px;
+  font-weight: bold;
+  color: #d32f2f;
+}
+
+.travel-details{
+  background-color: #f9f9f9;
+  padding: 10px;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+ul{
+  list-style-type: none;
+  padding: 0;
+}
+
+ul li{
+  background-color: #f4f6f9;
+  padding: 5px 10px;
+  border-radius: 5px;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #444;
+}
+
+.chargeable{
+  background-color: #e6f7ff;
+  color: #0050b3;
+  font-weight: bold;
+}
+
+.not-chargeable{
+  background-color: #dff0d8;
+  color: #2d6a4f;
+  font-weight: bold;
 }

@@ -3,10 +3,12 @@ package com.Encora.AmadeusBackend.Controller;
 import com.Encora.AmadeusBackend.Model.AirportCode;
 import com.Encora.AmadeusBackend.Model.Flight;
 import com.Encora.AmadeusBackend.Service.FlightServiceImpl;
+import com.Encora.AmadeusBackend.Service.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -29,5 +31,20 @@ public class FlightController implements FlightApi{
         return new ResponseEntity<>(flightService.getFlights(departureAirportCode, arrivalAirportCode,departureDate,
                 returnDate, adults, nonStop, currencyCode),
                 HttpStatus.OK);
+    }
+
+    @Override
+    public ResponseEntity<List<Flight>> sortFlights(Integer orderPrice, Integer orderDate) {
+        return new ResponseEntity<>(flightService.sortFligths(orderPrice, orderDate), HttpStatus.OK);
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<String> handleException(ValidationException exception){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.getMessage());
+    }
+
+    @Override
+    public ResponseEntity<List<Flight>> paginateFlights(Integer pageNumber) {
+        return new ResponseEntity<>(flightService.handlePagination(pageNumber, 6), HttpStatus.OK);
     }
 }

@@ -2,7 +2,6 @@ package com.Encora.AmadeusBackend.Service;
 
 import com.Encora.AmadeusBackend.Model.AirportCode;
 import com.Encora.AmadeusBackend.Model.Flight;
-import com.Encora.AmadeusBackend.Model.FlightDetails;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -11,15 +10,13 @@ import java.util.Map;
 public interface FlightService {
 
     String getAccessToken();
-    ResponseEntity<Map> createURL(String specificURL);
+    ResponseEntity<Map> getData(String specificURL);
     List<AirportCode> getCodes(String keyword);
     List<Flight> getFlights(String departureAirportCode, String arrivalAirportCode, String departureDate, String arrivalDate, Integer adults, Boolean nonStop, String currency);
     String getAirportName(String airportCode);
     String getCityName(String airportCode);
-    String getTotalTime(String initialTime, String finalTime);
-//    List<FlightDetails> getFlightDetails();
-    //METODO PARA CHECAR TODO, VERIFICAR Y LANZAR EXCEPCIONES
-
-
-
+    List<Flight> sortFligths(Integer orderPrice, Integer orderDate);
+    void validateData(String departureAirportCode, String arrivalAirportCode, String departureDate, String arrivalDate, Integer adults, Boolean nonStop, String currency);
+    List<Flight> handlePagination(Integer pagination, Integer pageSize);
+    List<Flight> paginateFlights(List<Flight> flights, Integer pagination, Integer pageSize);
 }

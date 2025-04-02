@@ -2,199 +2,231 @@ package com.Encora.AmadeusBackend.Service;
 
 import com.Encora.AmadeusBackend.Model.AirportCode;
 import com.Encora.AmadeusBackend.Model.Flight;
+import com.Encora.AmadeusBackend.Model.FlightDetails;
 import com.Encora.AmadeusBackend.Model.Segments;
-import com.Encora.AmadeusBackend.Repo.FlightRepo;
-import org.apache.coyote.Response;
+import com.Encora.AmadeusBackend.Repo.FlightRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalTime;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class FlightServiceImpl implements FlightService{
 
-    @Autowired
-    FlightRepo flightRepo;
+    FlightRepository flightRepository;
+    RestTemplate restTemplate;
 
-  final String CLIENT_ID = System.getProperty("amadeus.client.id", System.getenv("AMADEUS_CLIENT_ID"));
-  final String CLIENT_SECRET = System.getProperty("amadeus.client.secret", System.getenv("AMADEUS_CLIENT_SECRET"));
-    
+    @Autowired
+    public FlightServiceImpl(FlightRepository flightRepository, RestTemplate restTemplate){
+        this.flightRepository = flightRepository;
+        this.restTemplate = restTemplate;
+    }
+
+    final String CLIENT_ID = System.getenv("MY_API_KEY");
+    final String CLIENT_SECRET = System.getenv("MY_API_SECRET");
+    final int MAX_RETRIES = 5;
+    final String BASE_URL = "https://test.api.amadeus.com/";
     Map<String, String> airlinesNames = new HashMap<>();
     Map<String, String> cityNames = new HashMap<>();
 
-    //CHECAR
-    public FlightServiceImpl() throws Exception {
-    }
-
     @Override
     public String getAccessToken(){
-        RestTemplate restTemplate = new RestTemplate();
+        String requestBody = "grant_type=client_credentials" + "&client_id=" + CLIENT_ID + "&client_secret=" + CLIENT_SECRET;
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
-        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("grant_type", "client_credentials");
-        body.add("client_id", CLIENT_ID);
-        body.add("client_secret", CLIENT_SECRET);
-
-
-        //CHECAR ESTO COMPARADO CON EL DE CREATEURL
-        HttpEntity<MultiValueMap<String, String>>  request = new HttpEntity<>(body, headers);
-        ResponseEntity<Map> response = restTemplate.postForEntity("https://test.api.amadeus.com/v1/security/oauth2/token", request, Map.class);
+        HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
+        ResponseEntity<Map> response = restTemplate.exchange(BASE_URL+"v1/security/oauth2/token", HttpMethod.POST, request, Map.class);
         return (String) response.getBody().get("access_token");
     }
 
     @Override
-    public ResponseEntity<Map> createURL(String specificURL) {
+    public ResponseEntity<Map> getData(String specificURL) {
         String token = getAccessToken();
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization","Bearer " + token);
+        headers.set("Content-Type", "application/json");
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<Map> response = restTemplate.exchange(specificURL, HttpMethod.GET, entity, Map.class);
-
-        return response;
+        int retries = 0;
+        int waitTime = 1;
+        while (retries<MAX_RETRIES){
+            ResponseEntity<Map> response = restTemplate.exchange(specificURL, HttpMethod.GET, entity, Map.class);
+            if(response.getStatusCode() == HttpStatus.OK){
+                return response;
+            }
+            else if(response.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS){
+                try{
+                    System.out.println("Waiting for API response");
+                    TimeUnit.SECONDS.sleep(waitTime);
+                    waitTime *=2;
+                    retries += 1;
+                }catch(InterruptedException e){
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Retry error", e);
+                }
+            }else{
+                throw new RuntimeException("Error by consuming the API" + response.getStatusCode());
+            }
+        }
+        throw new RuntimeException("Maximum number of retries per request");
     }
 
     @Override
     public List<AirportCode> getCodes(String keywordToSearch) {
-        ResponseEntity<Map> response = createURL("https://test.api.amadeus.com/v1/reference-data/locations?subType=CITY,AIRPORT&keyword="+keywordToSearch);
-        //Se envia al repo y se ejecuta alla para obtener la info
+        ResponseEntity<Map> response = getData(BASE_URL+"v1/reference-data/locations?subType=AIRPORT&keyword="+keywordToSearch+"&sort=analytics.travelers.score&view=LIGHT");
         List<Map<String, Object>> codeData = (List<Map<String, Object>>) response.getBody().get("data");
         List<AirportCode> result = new ArrayList<>();
         for(Map<String, Object> code: codeData){
-
-            String codeToPrint = (String) code.get("id");
+            String codeToPrint = (String) code.get("iataCode");
             String name = (String) code.get("detailedName");
             AirportCode newCode = new AirportCode(name,codeToPrint);
             result.add(newCode);
-            System.out.println(newCode.toString());
         }
         return result;
     }
 
     @Override
     public List<Flight> getFlights(String departureAirportCode, String arrivalAirportCode, String departureDate, String arrivalDate, Integer adults, Boolean nonStop, String currency) {
-        StringBuilder builder = new StringBuilder("https://test.api.amadeus.com/v2/shopping/flight-offers?");
-
-        //HAY QUE CHECAR QUE PASA SI RETURN DATE ES NULL!!
+        validateData(departureAirportCode, arrivalAirportCode, departureDate, arrivalDate, adults, nonStop, currency);
+        StringBuilder builder = new StringBuilder(BASE_URL+"v2/shopping/flight-offers?");
         builder.append("originLocationCode=").append(departureAirportCode).append("&destinationLocationCode=").append(arrivalAirportCode).
-                append("&departureDate=").append(departureDate).append("&returnDate=").append(arrivalDate).append("&adults=").append(adults).
-                append("&nonStop=").append(nonStop).append("&currencyCode=").append(currency).append("&max=40");
+                append("&departureDate=").append(departureDate);
+                if(!Objects.equals(arrivalDate, "none")){ //returnDate is optional
+                    builder.append("&returnDate=").append(arrivalDate);
+                }
+                builder.append("&adults=").append(adults).
+                append("&nonStop=").append(nonStop).append("&currencyCode=").append(currency).append("&max=150");
 
-
-        ResponseEntity<Map> response  = createURL(builder.toString());
-
+        ResponseEntity<Map> response  = getData(builder.toString());
         List<Map<String, Object>> flightData = (List<Map<String, Object>>) response.getBody().get("data");
-
-        for(Map<String, Object> flight: flightData){
-            Map<String, Object> itineraries = ((List<Map<String, Object>>) flight.get("travelerPricings")).get(0);
-            System.out.println(itineraries);
-
-        }
-
+        Map<String, Object> dictionaries = ((Map<String, Object>) response.getBody().get("dictionaries"));
 
         List<Flight> flights = new ArrayList<>();
+        Set<String> control = new HashSet<>();
+
         for(Map<String, Object> flight: flightData){
+            Integer flightId = Integer.valueOf((String) flight.get("id"));
 
-            //CHECAR ESTO
-            List<Segments> totalSegments = new ArrayList<>();
-
-            //El itinerary uno es de ida y el otro es de regreo.
-            //AHORITA COMO SOLO PONEMOS OBTENER EL 0 SE OBTIENEN SOLO LOS DE IDA
-            Map<String, Object> itineraries = ((List<Map<String, Object>>) flight.get("itineraries")).get(0);
-
-            //Aqui cada posicion es para llegar al destino, cada segmento esta entrelazado para llegar al destino
-
-//            Map<String, Object> segment = ((List<Map<String, Object>>) itineraries.get("segments")).get(0);
-
-            List<Map<String, Object>> allSegments = ((List<Map<String, Object>>) itineraries.get("segments"));
-
-
-            //NO ESTA OBTENIENDO LOS DE REGRESO, solamente si se pone una return date
-            //CADA VEZ QUE ESTOY CHECANDO UN VUELO VUELVE A EMPEZAR
-            for(Map<String, Object> segment: allSegments){
-
-                Map<String, Object> departure = (Map<String, Object>) segment.get("departure");
-                String departureTime = (String) departure.get("at");
-                String initialAirlineCode = (String) departure.get("iataCode");
-
-
-                Map<String, Object> arrival = (Map<String, Object>) segment.get("arrival");
-                String arrivalTime = (String) arrival.get("at");
-                String arriveAirlineCode = (String) departure.get("iataCode");
-
-                //CAMBIAR LOS CODIGOS A NOMBRES DE CIUDADES!
-
-                //getCityName(initialAirlineCode)
-                String initialName = "NO TODOS ESTAN?";
-                String arriveName = "Otro";
-
-                Map<String, Object> operating = (Map<String, Object>) segment.get("operating");
-
-                String carrierCode = (String) operating.get("carrierCode");
-
-                Map<String, Object> aircraft = (Map<String, Object>) segment.get("aircraft");
-                String aircraftCode = (String) aircraft.get("code");
-
-
-                String totalDuration = (String) segment.get("duration");
-
-                Segments newSegment = new Segments(departureTime, arrivalTime, arriveName, initialName, initialAirlineCode, arriveAirlineCode, carrierCode, aircraftCode, totalDuration);
-                totalSegments.add(newSegment);
-
-                //System.out.println(newSegment.toString());
+            int returningSements = 2;
+            if(Objects.equals(arrivalDate, "none")){
+                returningSements = 1;
             }
 
+            Map<String, Object> checkItineraries = ((List<Map<String, Object>>) flight.get("itineraries")).get(0);
+            List<Map<String, Object>> checkSegments = ((List<Map<String, Object>>) checkItineraries.get("segments"));
+            Map<String, Object> check = (Map<String, Object>) checkSegments.get(0).get("departure");
+            String checkTime = (String) check.get("at");
 
-            //CHECAR EL INDICE DE ESTAS MADRES, PARA QUE NO SEA ESTATICO, PORQUE LA LISTA ESTA FUERA DEL FOR
-            //NO ESTA BIEN PORQUE HAY MAS SEGMENTOS POR VIAJE,
-            String departureTime = totalSegments.get(0).getInitialDepartureDate();
-            String arrivalTime = totalSegments.get(0).getFinalArrivalDate();
-            String carrierCode = totalSegments.get(0).getCarrierCode();
-            String airlineName = getAirportName(carrierCode);
+            if(control.contains(checkTime)) continue; //To not have the same flight with different id segments
+            control.add(checkTime);
 
-            //FALTA ENCONTRAR EL NOMBRE Y EL TIEMPO
+            List<Map<String, Object>> travelerPricings = ((List<Map<String, Object>>) flight.get("travelerPricings"));
+            List<Map<String, Object>> fareDetailsBySegment = ((List<Map<String, Object>>) travelerPricings.get(0).get("fareDetailsBySegment"));
+            Map<String, Object> dicAircrafts = ((Map<String, Object>) dictionaries.get("aircraft"));
+            int segmentCount = 0;
 
-            //CAMBIAR A LOCALDATETIME???
-            //HAY UNA PROPIEDAD EN LOS DATOS QUE DICE EL TIEMPO TOTAL ARRIBA DE LOS SEGMENTS
-            //(String) itineraries.get("duration");
-            Integer GenericTime = 10;
-            //getTotalTime(departureTime, arrivalTime);
+            for(int i=0; i<returningSements;i++){
+                List<Segments> totalSegments = new ArrayList<>();
+                Map<String, Object> itineraries = ((List<Map<String, Object>>) flight.get("itineraries")).get(i);
+                List<Map<String, Object>> allSegments = ((List<Map<String, Object>>) itineraries.get("segments"));
 
-            Float pricePerTraveler = 10F; //ESTO LO CALCULAMOS NOSOTROS?? YO CREO QUE SI
+                for(Map<String, Object> segment: allSegments){
+                    Map<String, Object> departure = (Map<String, Object>) segment.get("departure");
+                    String departureTime = (String) departure.get("at");
+                    String initialAirlineCode = (String) departure.get("iataCode");
 
-            Map<String, Object> price = (Map<String, Object>) flight.get("price");
+                    Map<String, Object> arrival = (Map<String, Object>) segment.get("arrival");
+                    String arrivalTime = (String) arrival.get("at");
+                    String arriveAirlineCode = (String) arrival.get("iataCode");
 
-            Float totalPrice = Float.valueOf((String) price.get("total"));
-            String currencyName = (String) price.get("currency");
+                    String initialName = getCityName(initialAirlineCode);
+                    String arriveName = getCityName(arriveAirlineCode);
 
-            //SEGMENTS PEUDE TENER DISTINTOS, CHECAR ESO POR MIENTRAS ESTA ESTATICO
-            Flight newFlight = new Flight(departureTime, arrivalTime, airlineName, carrierCode, GenericTime, totalPrice, pricePerTraveler, currencyName, totalSegments);
-            flights.add(newFlight);
+                    Map<String, Object> operating = (Map<String, Object>) segment.get("operating");
+                    String carrierCode;
+                    if(operating == null)carrierCode = "";
+                    else carrierCode = (String) operating.get("carrierCode");
+
+                    Map<String, Object> aircraft = (Map<String, Object>) segment.get("aircraft");
+                    String preCode = (String) aircraft.get("code") ;
+                    String aircraftCode = (String) dicAircrafts.get(preCode);
+                    String durationSegment = (String) segment.get("duration");
+                    String totalDuration = durationSegment.substring(2);
+
+                    Map<String, Object> flightDetails = (Map<String, Object>) flight.get("price");
+                    String total = (String) flightDetails.get("total");
+
+                    List<Map<String, Object>> totalFees = ((List<Map<String, Object>>) flightDetails.get("fees"));
+                    String fees = (String)totalFees.get(0).get("amount") + " " + (String)totalFees.get(0).get("type");
+                    String base = (String) flightDetails.get("base");
+                    FlightDetails finalFlightDetails = new FlightDetails(total, fees, base);
+
+                    String segmentDetailsCabin = (String) fareDetailsBySegment.get(segmentCount).get("cabin");
+                    String segmentDetailsClass = (String) fareDetailsBySegment.get(segmentCount).get("class");
+                    List<Map<String, Object>> amenities = ((List<Map<String, Object>>) fareDetailsBySegment.get(segmentCount).get("amenities"));
+
+                    List<Map<String,Boolean>> allAmenities = new ArrayList<>();
+                    if(amenities != null){
+                        for(Map<String, Object> amenity: amenities){
+                            String description = (String) amenity.get("description");
+                            Boolean isChargeable = (Boolean) amenity.get("isChargeable");
+                            Map<String, Boolean> result = new HashMap<>();
+                            result.put(description, isChargeable);
+                            allAmenities.add(result);
+                        }
+                    }
+                    segmentCount += 1;
+
+                    Segments newSegment = new Segments(departureTime, arrivalTime, arriveName, initialName, initialAirlineCode,
+                            arriveAirlineCode, carrierCode, aircraftCode, totalDuration,allAmenities, segmentDetailsClass, segmentDetailsCabin, finalFlightDetails);
+                    totalSegments.add(newSegment);
+                }
+
+                String departureTime = totalSegments.get(0).getInitialDepartureDate();
+                String arrivalTime = totalSegments.get(totalSegments.size()-1).getFinalArrivalDate();
+                String carrierCode = totalSegments.get(0).getCarrierCode();
+
+                Map<String, Object> carriers = ((Map<String, Object>) dictionaries.get("carriers"));
+                String airlineName = (String) carriers.get(carrierCode);
+
+                Map<String, Object> checkTotalTime = ((List<Map<String, Object>>) flight.get("itineraries")).get(i);
+                String totalTime = (String) checkTotalTime.get("duration");
+
+                Duration duration = Duration.parse(totalTime);
+                LocalTime time = LocalTime.MIDNIGHT.plus(duration);
+
+                Map<String, Object> price = (Map<String, Object>) flight.get("price");
+
+                Float totalPrice = Float.valueOf((String) price.get("total"));
+                Float pricePerTraveler = totalPrice/adults;
+                String currencyName = (String) price.get("currency");
+
+                Flight newFlight = new Flight(flightId, departureTime, arrivalTime, airlineName, carrierCode, time, totalPrice, pricePerTraveler, currencyName, totalSegments);
+                flights.add(newFlight);
+            }
         }
-        return flights;
+        flightRepository.cachedList = flights;
+        return paginateFlights(flights, 0, 6);
     }
 
     @Override
     public String getAirportName(String airportCode) {
         if(!airlinesNames.containsKey(airportCode)){
-            StringBuilder builder = new StringBuilder("https://test.api.amadeus.com/v1/reference-data/airlines?airlineCodes=");
+            StringBuilder builder = new StringBuilder(BASE_URL+"v1/reference-data/airlines?airlineCodes=");
+            System.out.println(airportCode);
             builder.append(airportCode);
-            ResponseEntity<Map> response  = createURL(builder.toString());
+            ResponseEntity<Map> response  = getData(builder.toString());
             List<Map<String, Object>> codeData = (List<Map<String, Object>>) response.getBody().get("data");
-            airlinesNames.put(airportCode, ((String) codeData.get(0).get("businessName")));
+            if(codeData.isEmpty()){
+                airlinesNames.put(airportCode, ""); //To prevent the 429 too many requests when some code its not in the API
+                return "";
+            }            airlinesNames.put(airportCode, ((String) codeData.get(0).get("businessName")));
             return ((String) codeData.get(0).get("businessName"));
         }
         return airlinesNames.get(airportCode);
@@ -202,16 +234,19 @@ public class FlightServiceImpl implements FlightService{
 
     @Override
     public String getCityName(String airportCode) {
+        String cityFromRepo = flightRepository.getCity(airportCode);
+        if(!Objects.equals(cityFromRepo, "")) return cityFromRepo;
         if(!cityNames.containsKey(airportCode)){
-            StringBuilder builder = new StringBuilder("https://test.api.amadeus.com/v1/reference-data/locations?subType=CITY,AIRPORT&keyword="+airportCode);
+            System.out.println(airportCode);
+            StringBuilder builder = new StringBuilder(BASE_URL+"v1/reference-data/locations?subType=CITY,AIRPORT&keyword="+airportCode);
             builder.append(airportCode);
-            ResponseEntity<Map> response  = createURL(builder.toString());
-
+            ResponseEntity<Map> response  = getData(builder.toString());
             List<Map<String, Object>> codeData = (List<Map<String, Object>>) response.getBody().get("data");
-            System.out.println(codeData);
+            if(codeData.isEmpty()){
+                cityNames.put(airportCode, ""); //To prevent the 429 too many requests when some code its not in the API
+                return "";
+            }
             Map<String, Object> cityName = (Map<String, Object>) codeData.get(0).get("address");
-
-
             cityNames.put(airportCode, ((String) cityName.get("cityName")));
             return ((String) cityName.get("cityName"));
         }
@@ -219,17 +254,73 @@ public class FlightServiceImpl implements FlightService{
     }
 
     @Override
-    public String getTotalTime(String initialTime, String finalTime) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
-        LocalDateTime time1 = LocalDateTime.parse(initialTime, formatter);
-        LocalDateTime time2 = LocalDateTime.parse(finalTime, formatter);
+    public List<Flight> sortFligths(Integer orderPrice, Integer orderDate) {
+        List<Flight> cachedList = flightRepository.cachedList;
 
-        Duration duration = Duration.between(time1, time2);
-        long hours = duration.toHours();
-        long minutes = duration.toMinutes() % 60;
+        if(orderPrice == 1 && orderDate == 1) return paginateFlights(cachedList, 0, 6);
+        if(orderPrice == 3 && orderDate ==1) {cachedList.sort(Comparator.comparingDouble(Flight::getTotalPrice));}
+        else if(orderPrice ==2 && orderDate == 1) {cachedList.sort(Comparator.comparingDouble(Flight::getTotalPrice).reversed());}
+        else if(orderPrice == 1 && orderDate == 3) {cachedList.sort(Comparator.comparing(Flight::getTotalTime, Comparator.nullsLast(LocalTime::compareTo)));}
+        else if(orderPrice ==1 && orderDate ==2) {cachedList.sort(Comparator.comparing(Flight::getTotalTime, Comparator.nullsFirst(LocalTime::compareTo)).reversed());}
+        else if(orderPrice == 2 && orderDate == 2){
+            cachedList.sort(Comparator.comparing(Flight::getTotalPrice).reversed()
+                    .thenComparing(Flight::getTotalTime, Comparator.nullsLast(LocalTime::compareTo)));
+        }else if(orderPrice == 2 && orderDate == 3){
+            cachedList.sort(Comparator.comparing(Flight::getTotalPrice)
+                    .thenComparing(Flight::getTotalTime, Comparator.nullsFirst(LocalTime::compareTo)).reversed());
+        }else if(orderPrice == 3 && orderDate ==2){
+            cachedList.sort(Comparator.comparing(Flight::getTotalPrice).reversed()
+                    .thenComparing(Flight::getTotalTime, Comparator.nullsFirst(LocalTime::compareTo)));
+        }else if(orderPrice == 3 && orderDate == 3){
+            cachedList.sort(Comparator.comparingDouble(Flight::getTotalPrice)
+                    .thenComparing(Flight::getTotalTime, Comparator.nullsLast(LocalTime::compareTo).reversed()));
+        }
+        flightRepository.cachedList = cachedList;
+        return paginateFlights(cachedList, 0, 6);
+    }
 
-        System.out.println("Hora: " + hours + " Minutos: " + minutes);
+    @Override
+    public void validateData(String departureAirportCode, String arrivalAirportCode, String departureDate, String arrivalDate, Integer adults, Boolean nonStop, String currency) {
+        if(departureAirportCode == null || arrivalAirportCode == null){
+            throw new ValidationException("Airport codes cannot be null");
+        }
+        if(departureDate == null){
+            throw new ValidationException("Departure date cannot be null");
+        }
+        if(adults == null){
+            throw new ValidationException("Adults cannot be null");
+        }
+        if(adults < 0 || adults > 9){
+            throw new ValidationException("Adult value must be between 1 and 9");
+        }
+        if(currency == null){
+            throw new ValidationException("Currency cannot be null");
+        }
+        if(nonStop == null){
+            throw new ValidationException("Non stop cannot be null");
+        }
+        if(departureAirportCode.length() != 3 || arrivalAirportCode.length() !=3){
+            throw new ValidationException("Airport codes must be of length 3");
+        }
+    }
 
-        return "";
+    @Override
+    public List<Flight> handlePagination(Integer pagination, Integer pageSize) {
+        return paginateFlights(flightRepository.cachedList, pagination, pageSize);
+    }
+
+    @Override
+    public List<Flight> paginateFlights(List<Flight> flights, Integer pagination, Integer pageSize) {
+        int totalFlights = flights.size();
+        if (totalFlights < 6) return flights;
+        int lowerBound = pagination*pageSize;
+        int upperBound = (pagination+1)*pageSize;
+
+        if(totalFlights < upperBound){
+            upperBound = totalFlights;
+        }
+
+        flights = flights.subList(lowerBound, upperBound);
+        return flights;
     }
 }
