@@ -22,7 +22,6 @@ const Search: React.FC<SearchProps> = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentDate, setCurrentDate] = useState(today.add(1, "day"));
 
-  //TO DO: Lets move this Type to a separate folder
   type FieldType = {
     departureAirport: string;
     arrivalAirport: string;
@@ -105,7 +104,6 @@ const Search: React.FC<SearchProps> = ({
     return () => clearTimeout(debounce);
   }, [query]);
 
-  //TO DO: If the dates are set, and then the initial date is changed, I need to also handle that
   const handleDateChange = (date:any, dateString:any) =>{
     setCurrentDate(dayjs(dayjs(dateString).format(dateFormat)));
     console.log(date);

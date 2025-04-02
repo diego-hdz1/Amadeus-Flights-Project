@@ -23,9 +23,7 @@ interface PaginationControllProps{
         setPagination(pagination-1);
       }
     
-      //TO DO: Add bounderies for maximum pagination
       function incPagination(){
-        // if (stats.numberPages<=pagination) return;
         setPagination(pagination+1);
       }
   

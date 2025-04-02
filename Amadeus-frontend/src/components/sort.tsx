@@ -38,8 +38,8 @@ const Sort: React.FC<ShowSortProps> = ({
                 </select>
                 <select value={filterDate} onChange={(e)=>setFilterDate(Number(e.target.value))}>
                     <option value={1}>-</option>
-                    <option value={2}>Descending date</option>
-                    <option value={3}>Ascending date</option>
+                    <option value={3}>Descending date</option>
+                    <option value={2}>Ascending date</option>
                 </select>
                 <button type="button" onClick={handleFilter}>Filter</button>
             </form>

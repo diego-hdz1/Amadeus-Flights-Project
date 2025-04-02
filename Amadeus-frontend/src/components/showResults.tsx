@@ -49,7 +49,6 @@ const ShowResults: React.FC<ShowResultsProps> = ({
     useEffect(()=>{
         if(location.pathname === "/showResult"){
         fetchData();
-        console.log("Dentro del fetch data");
     }
     }, [location]);
 
@@ -88,7 +87,7 @@ const ShowResults: React.FC<ShowResultsProps> = ({
                                 {index == 0 ? <h4>Departure flight</h4> : <h4>Return flight</h4>}
                                 <p>Initial departure date: {flight.initialDepartureDate}&emsp;&emsp;&emsp;&emsp;&emsp;Final arrival date: {flight.finalArrivalDate}</p> 
                                 {/* <p>Final arrival date: {flight.finalArrivalDate}</p> */}
-                                <p>{flight.segments[0].initialCityName} ({flight.segments[0].initialAirlineCode}) - {flight.segments[0].arriveCityName} ({flight.segments[0].arriveAirlineCode})</p>
+                                <p>{flight.segments[0].initialCityName} ({flight.segments[0].initialAirlineCode}) - {flight.segments[(flight.segments.length)-1].arriveCityName} ({flight.segments[(flight.segments.length)-1].arriveAirlineCode})</p>
                                 <p>{flight.airlineName} ({flight.airlineCode})</p>
                                 <p>Total duration: {flight.totalTime} H</p>    
                                 </Card>
