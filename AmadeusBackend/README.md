@@ -41,11 +41,6 @@ mvn spring-boot:run
 http://localhost:8080
 ```
 
-## Running the tests
-```bash
-mvn test
-```
-
 ## How to set up your API secrets 
 
 For Linux and MacOS we can use the terminal to define the environment variables.
