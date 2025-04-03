@@ -1,54 +1,59 @@
-# React + TypeScript + Vite
+# Amadeus Flight App Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Overview 
+This is the frontend of the Amadeus Flight App, developed using **React** and **TypeScript**, powered by **Vite** for fast development and build performance. The frontend consumes the backend API and provides a responsive user interface to show all of the information from the backend. 
 
-Currently, two official plugins are available:
+## Features
+- Search flight options providing certain parameters
+- Search airport codes dynamically from a specified keyword  
+- Filter and sort flights dynamically
+- Pagináte flights in order to improve user experience 
+- Responsive UI using Ant Design
+- Client-side routing with React Router DOM
+- API integration using Axios
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Technologies used
+- **Vite:** Fast build tool and development server for React
+- **React:** Library for building the user interface
+- **TypeScript:** Enhances JavaScript with static typing
+- **Ant Desing:** UI component library for a polished and responsive design
+- **Reacr Router DOM:** Handles client-side routing
+- **Axios:** Manages HTTP requests to the backend API
+- **Vitest:** Framework used for unit testing
 
-## Expanding the ESLint configuration
+## Prerequisites
+Before running the project, make sure you have **Node.js** installed.
+This project was developed using Node v22.12.0
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+### Check if Node.js is installed:
+```bash
+node -v
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Running the frontend
+1. Install dependencies:
+```bash
+npm install
+```
+2. Run the application
+```bash
+npm run dev
+```
+3. The frontend will be available at:
+```bash
+http://localhost:5173
+```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+## For creating the image that will be used in the docker-compose.yaml
+1. Check if Docker is installed:
+```bash
+docker -v
+```
+2. Check if Docker engine is running
+```bash
+docker ps
+```
+3. Build the image 
+```bash
+docker build -t amadeus-frontend-image .
 ```
