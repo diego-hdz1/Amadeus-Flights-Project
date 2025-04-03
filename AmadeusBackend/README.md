@@ -1,8 +1,8 @@
 # Amadeus Flight App Backend
 
 ## Overview
-This is the backend service for the Amadeus Flight App, built using **Spring Boot** to provide a RESTful API for managing tasks.
-The backend handles the business logic such as filtering, sorting and pagination, but also the connection with the Amadeus APIm managing access token and creating requests to obtain information that will be displayed by the frontend. 
+This is the backend service for the Amadeus Flight App, built using **Spring Boot** to provide a RESTful API for managing flights.
+The backend handles the business logic such as filtering, sorting and pagination, but also the connection with the Amadeus API, managing access token and creating requests to obtain information that will be displayed by the frontend. 
 
 ## Features
 - REST API to manage the connection with Amadeus API
@@ -62,8 +62,28 @@ export API_SECRET_KEY="your_api_key" >>  ~./bashrc
 source  ~./bashrc
 ```
 
+To check if the variable was successfully saved, you can run
+
+```bash
+echo $API_SECRET_KEY
+```
+
 Now in your program we can use the following command to obtain the value 
 
 ```bash
 System.getenv("API_SECRET_KEY");
+```
+
+## For creating the image that will be used in the docker-compose.yaml
+1. Check if Docker is installed:
+```bash
+docker -v
+```
+2. Check if Docker engine is running
+```bash
+docker ps
+```
+3. Build the image 
+```bash
+docker build -t amadeus-backend-image .
 ```
