@@ -41,6 +41,11 @@ mvn spring-boot:run
 http://localhost:8080
 ```
 
+## IMPORTANT NOTE
+
+If you are executing the code without the Docker compose, the default port of the frontend is 5173. So in the Controller for the CORS it needs to be changed to 5173.
+If you are using the Docker Comopose, there are not problems
+
 ## How to set up your API secrets 
 
 For Linux and MacOS we can use the terminal to define the environment variables.
